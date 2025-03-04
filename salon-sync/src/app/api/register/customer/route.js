@@ -6,21 +6,35 @@ export async function POST(req) {
     const { name, email, password } = await req.json();
     const { db } = await connectToDatabase();
 
+    // Normalize email for case insensitivity
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Ensure password exists
+    if (!password || typeof password !== 'string' || password.trim() === '') {
+      return new Response(JSON.stringify({ success: false, message: 'Password is required' }), { status: 400 });
+    }
+
+    // Check if email already exists
+    const existingUser = await db.collection('Customer').findOne({ email: normalizedEmail });
+
+    if (existingUser) {
+      return new Response(JSON.stringify({ success: false, message: 'Email already exists.' }), { status: 400 });
+    }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert data into the 'Customer' collection with the hashed password
+    // Insert into database
     const result = await db.collection('Customer').insertOne({
       name,
-      email,
-      password: hashedPassword, // Store the hashed password
+      email: normalizedEmail,
+      password: hashedPassword,
     });
 
-    return new Response(JSON.stringify({ success: true, message: 'Customer registered successfully!' }), {
-      status: 201,
-    });
+    return new Response(JSON.stringify({ success: true, message: 'Customer registered successfully!' }), { status: 201 });
   } catch (error) {
-    console.error(error);
-    return new Response('Error registering customer', { status: 500 });
+    console.error("❌ Error registering customer:", error);
+    return new Response(JSON.stringify({ success: false, message: 'Error registering customer' }), { status: 500 });
   }
 }
+

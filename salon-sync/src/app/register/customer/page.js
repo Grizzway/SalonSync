@@ -1,77 +1,63 @@
-import { connectToDatabase } from '@/app/utils/mongoConnection';
-import bcrypt from 'bcryptjs';
+"use client";
 
-// Handle Business Registration
-export async function POST(req) {
-  try {
-    const { businessName, email, password, address } = await req.json();
-    const { db } = await connectToDatabase();
+import { useState } from "react";
 
-    // Ensure email is trimmed and lowercase for case insensitivity
-    const normalizedEmail = email.trim().toLowerCase();
+export default function RegisterCustomerPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-    // Ensure password exists and is not empty
-    if (!password || typeof password !== 'string' || password.trim() === '') {
-      return new Response(JSON.stringify({ success: false, message: 'Password is required and must be a non-empty string.' }), { status: 400 });
-    }
-
-    // Log the normalized email for debugging
-    console.log('Normalized Email:', normalizedEmail);
-
-    // Check if the email already exists in either the Business or Customer collection
-    const existingBusiness = await db.collection('Business').findOne({ email: normalizedEmail });
-    const existingCustomer = await db.collection('Customer').findOne({ email: normalizedEmail });
-
-    console.log('Existing Business:', existingBusiness);
-    console.log('Existing Customer:', existingCustomer);
-
-    if (existingBusiness || existingCustomer) {
-      return new Response(JSON.stringify({ success: false, message: 'Email already exists.' }), { status: 400 });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert data into the 'Business' collection with the hashed password
-    const result = await db.collection('Business').insertOne({
-      businessName,
-      email: normalizedEmail,  // Store the email in lowercase
-      password: hashedPassword,
-      address,
+  const handleRegister = async () => {
+    const response = await fetch("/api/register/customer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
     });
 
-    return new Response(JSON.stringify({ success: true, message: 'Business registered successfully!' }), { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return new Response('Error registering business', { status: 500 });
-  }
-}
+    const data = await response.json();
+    setMessage(data.message);
+  };
 
-// Handle Email Checking
-export async function POST_check_email(req) {
-  try {
-    const { email } = await req.json();
-    const { db } = await connectToDatabase();
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white px-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md text-center border border-gray-200 dark:border-gray-700">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 dark:text-gray-200">
+          Register as a Customer
+        </h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">Fill out your details to create an account.</p>
 
-    // Ensure email is trimmed and lowercase for case insensitivity
-    const normalizedEmail = email.trim().toLowerCase();
+        <input
+          type="text"
+          placeholder="Name"
+          className="w-full px-4 py-2 rounded-md border mt-4"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full px-4 py-2 rounded-md border mt-4"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full px-4 py-2 rounded-md border mt-4"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-    // Log the normalized email for debugging
-    console.log('Checking Email:', normalizedEmail);
+        <button
+          onClick={handleRegister}
+          className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Register
+        </button>
 
-    // Check if email exists in either the Business or Customer collection
-    const existingBusiness = await db.collection('Business').findOne({ email: normalizedEmail });
-    const existingCustomer = await db.collection('Customer').findOne({ email: normalizedEmail });
-
-    console.log('Existing Business:', existingBusiness);
-    console.log('Existing Customer:', existingCustomer);
-
-    if (existingBusiness || existingCustomer) {
-      return new Response(JSON.stringify({ success: false }), { status: 200 });
-    }
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (error) {
-    console.error(error);
-    return new Response('Error checking email', { status: 500 });
-  }
+        {message && <p className="mt-4 text-red-500">{message}</p>}
+      </div>
+    </div>
+  );
 }
