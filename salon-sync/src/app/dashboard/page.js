@@ -42,6 +42,7 @@ export default function Dashboard() {
     { title: 'Client Schedule', path: '/dashboard/schedule' },
     { title: 'Employees', path: '/dashboard/employees' },
     { title: 'Payment History', path: '/dashboard/payments' },
+    { title: 'Reviews', path: '/dashboard/reviews' },
   ];
 
   const options = user?.type === 'business' ? businessOptions : customerOptions;
@@ -87,5 +88,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  );
+    );
 }
