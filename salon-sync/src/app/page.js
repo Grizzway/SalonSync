@@ -1,11 +1,23 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user?.type === 'employee') {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
       <Navbar />
