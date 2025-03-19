@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import Navbar from '@/components/Navbar';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -48,45 +49,28 @@ export default function Dashboard() {
   const options = user?.type === 'business' ? businessOptions : customerOptions;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">SalonSync</h1>
-        <div className="relative">
-          <button onClick={toggleDropdown} className="bg-gray-200 px-4 py-2 rounded-lg">
-            {user?.name}
-          </button>
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg w-48">
-              <button onClick={() => router.push('/dashboard')} className="w-full px-4 py-2 text-left">Dashboard</button>
-              {user?.type === 'business' && (
-                <button onClick={() => router.push('/business')} className="w-full px-4 py-2 text-left">My Business</button>
-              )}
-              <button onClick={handleLogout} className="w-full px-4 py-2 text-left">Logout</button>
-            </div>
-          )}
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800">
+      <Navbar />
       {/* Dashboard Grid */}
-      <div className="max-w-4xl mx-auto mt-12 p-6">
-        <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
+      <div className="max-w-3xl mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700">
+        <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-200 text-center mb-6">
           Welcome, {user?.name}!
         </h2>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="flex flex-col space-y-4">
           {options.map((option) => (
             <Card
               key={option.path}
-              className="cursor-pointer hover:shadow-lg transition p-6 text-center"
+              className="cursor-pointer hover:shadow-lg transition transform hover:scale-[1.02] p-6 text-center bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
               onClick={() => router.push(option.path)}
             >
               <CardHeader>
-                <CardTitle className="text-lg">{option.title}</CardTitle>
+                <CardTitle className="text-lg font-medium text-gray-800 dark:text-gray-200">{option.title}</CardTitle>
               </CardHeader>
             </Card>
           ))}
         </div>
       </div>
     </div>
-    );
+  );
 }
+

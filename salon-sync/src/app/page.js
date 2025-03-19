@@ -63,7 +63,7 @@ export default function Home() {
             transition={{ type: 'spring', stiffness: 120, damping: 10, delay: 0.2 }}
             className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all"
           >
-            <Link href="/register/business">
+            <Link href="/register">
               <Button className="bg-green-600 hover:bg-green-700 transition-all transform hover:scale-105 shadow-lg dark:shadow-green-900">
                 Register Your Salon
               </Button>

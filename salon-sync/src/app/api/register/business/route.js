@@ -1,90 +1,79 @@
-import { connectToDatabase } from '@/app/utils/mongoConnection';
-import bcrypt from 'bcryptjs';
+import { connectToDatabase } from "@/app/utils/mongoConnection";
+import bcrypt from "bcryptjs";
 
 // Handle Business Registration and Email Checking
 export async function POST(req) {
   try {
-    const { businessName, email, password, address } = await req.json();
-    const { db } = await connectToDatabase();
+    const body = await req.json();
+    const { businessName, email, password, address } = body;
 
-    // Check if only email is provided for checking
-    if (email && !businessName && !password && !address) {
-      // Ensure email is trimmed and lowercase for case insensitivity
-      const normalizedEmail = email.trim().toLowerCase();
-
-      // Check if email exists in either the Business or Customer collection
-      console.log(`Checking if email ${normalizedEmail} exists in Business and Customer collections...`);
-      const existingBusiness = await db.collection('Business').findOne({
-        email: normalizedEmail,
-      });
-      const existingCustomer = await db.collection('Customer').findOne({
-        email: normalizedEmail,
-      });
-
-      console.log('Business Collection:', existingBusiness);
-      console.log('Customer Collection:', existingCustomer);
-
-      if (existingBusiness || existingCustomer) {
-        return new Response(JSON.stringify({ success: false }), { status: 200 });
-      }
-      return new Response(JSON.stringify({ success: true }), { status: 200 });
-    }
-
-    // If we have both businessName, email, password, and address, proceed with registration
-    if (businessName && email && password && address) {
-      // Ensure email is trimmed and lowercase for case insensitivity
-      const normalizedEmail = email.trim().toLowerCase();
-
-      // Ensure password exists and is not empty
-      if (!password || typeof password !== 'string' || password.trim() === '') {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            message: 'Password is required and must be a non-empty string.',
-          }),
-          { status: 400 }
-        );
-      }
-
-      // Check if the email already exists in either the Business or Customer collection
-      console.log(`Checking if email ${normalizedEmail} exists in Business and Customer collections...`);
-      const existingBusiness = await db.collection('Business').findOne({
-        email: normalizedEmail,
-      });
-      const existingCustomer = await db.collection('Customer').findOne({
-        email: normalizedEmail,
-      });
-
-      console.log('Business Collection:', existingBusiness);
-      console.log('Customer Collection:', existingCustomer);
-
-      if (existingBusiness || existingCustomer) {
-        return new Response(
-          JSON.stringify({ success: false, message: 'Email already exists.' }),
-          { status: 400 }
-        );
-      }
-
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Insert data into the 'Business' collection with the hashed password
-      const result = await db.collection('Business').insertOne({
-        businessName,
-        email: normalizedEmail, // Store the email in lowercase
-        password: hashedPassword,
-        address,
-      });
-
+    if (!email) {
       return new Response(
-        JSON.stringify({ success: true, message: 'Business registered successfully!' }),
-        { status: 201 }
+        JSON.stringify({ success: false, message: "Email is required." }),
+        { status: 400 }
       );
     }
 
-    return new Response('Invalid data', { status: 400 });
+    const { db } = await connectToDatabase();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if request is only to verify email existence
+    if (!businessName && !password && !address) {
+      console.log(`Checking if email ${normalizedEmail} exists...`);
+
+      const emailExists =
+        (await db.collection("Business").findOne({ email: normalizedEmail })) ||
+        (await db.collection("Customer").findOne({ email: normalizedEmail }));
+
+      return new Response(
+        JSON.stringify({ success: !emailExists }),
+        { status: 200 }
+      );
+    }
+
+    // Ensure all required fields exist for registration
+    if (!businessName || !password || !address) {
+      return new Response(
+        JSON.stringify({ success: false, message: "All fields are required." }),
+        { status: 400 }
+      );
+    }
+
+    // Check if email is already registered
+    console.log(`Checking if email ${normalizedEmail} exists before registering...`);
+    const existingBusiness = await db.collection("Business").findOne({ email: normalizedEmail });
+    const existingCustomer = await db.collection("Customer").findOne({ email: normalizedEmail });
+
+    if (existingBusiness || existingCustomer) {
+      return new Response(
+        JSON.stringify({ success: false, message: "Email is already registered." }),
+        { status: 400 }
+      );
+    }
+
+    // Hash the password securely
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Store business in the database
+    const result = await db.collection("Business").insertOne({
+      businessName,
+      email: normalizedEmail,
+      password: hashedPassword,
+      address,
+      createdAt: new Date(),
+    });
+
+    console.log("Business registered:", result.insertedId);
+
+    return new Response(
+      JSON.stringify({ success: true, message: "Business registered successfully!", businessId: result.insertedId }),
+      { status: 201 }
+    );
   } catch (error) {
-    console.error(error);
-    return new Response('Error registering business', { status: 500 });
+    console.error("Error in Business Registration API:", error);
+    return new Response(
+      JSON.stringify({ success: false, message: "Internal Server Error" }),
+      { status: 500 }
+    );
   }
 }

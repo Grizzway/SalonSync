@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import Link from "next/link";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -11,71 +12,68 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push("/");
   };
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  // Check if user is a business account by examining `type`
-  const isBusiness = user?.type === 'business';
-
-  // Generate the salon page URL from the user's name (businessName)
-  const getBusinessPageUrl = () => {
-    if (user && isBusiness && user.name) {
-      // Convert business name to URL-friendly format (lowercase, replace spaces with hyphens)
-      return `/salons/${user.name.toLowerCase().replace(/\s+/g, '-')}`;
-    }
-    return '/business'; // Fallback if something goes wrong
+  const handleNavigation = (path) => {
+    setDropdownOpen(false); // Close dropdown after clicking
+    router.push(path);
   };
 
   return (
-    <nav className="bg-white shadow-md p-4 flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-gray-800 text-black">SalonSync</h1>
-      <div className="space-x-4 relative">
+    <nav className="bg-white dark:bg-gray-900 shadow-md p-4 flex justify-between items-center relative z-50">
+      <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-white">
+        SalonSync
+      </Link>
+
+      <div className="relative">
         {user ? (
-          <div>
-            <button onClick={toggleDropdown} className="bg-gray-200 px-4 py-2 rounded-lg text-black">
-              {user.name}
+          <div className="relative inline-block text-left">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg w-full focus:outline-none"
+            >
+              {user.businessName || "My Account"} ▼
             </button>
+
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-lg w-48">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
                 <button
-                  onClick={() => router.push('/dashboard')}
-                  className="w-full px-4 py-2 text-left text-black"
+                  onClick={() => handleNavigation("/dashboard")}
+                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   Dashboard
                 </button>
-                {isBusiness && (
-                  <button
-                    onClick={() => router.push(getBusinessPageUrl())}
-                    className="w-full px-4 py-2 text-left text-black"
-                  >
-                    My Business
-                  </button>
-                )}
-                <button onClick={handleLogout} className="w-full px-4 py-2 text-left text-black">
+                <button
+                  onClick={() => handleNavigation("/dashboard/business")}
+                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  My Business
+                </button>
+                <button
+                  onClick={() => handleNavigation("/")}
+                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  Homepage
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-3 hover:bg-red-500 hover:text-white dark:hover:bg-red-600"
+                >
                   Logout
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <>
-            <button
-              onClick={() => router.push('/login')}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
+          <div className="space-x-4">
+            <Link href="/login" className="px-4 py-2 bg-blue-600 text-white rounded-lg">
               Login
-            </button>
-            <button
-              onClick={() => router.push('/register')}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-            >
+            </Link>
+            <Link href="/register" className="px-4 py-2 bg-green-600 text-white rounded-lg">
               Register
-            </button>
-          </>
+            </Link>
+          </div>
         )}
       </div>
     </nav>
