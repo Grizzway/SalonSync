@@ -13,9 +13,31 @@ export default function SalonPage() {
   const { salonname } = useParams();
   const [salon, setSalon] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [averageRating, setAverageRating] = useState(0); // 🔥 Track the average rating
+  const [averageRating, setAverageRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 🔹 Placeholder stylists (Replace with real API data later)
+  const stylists = [
+    {
+      id: 1,
+      name: "Alex Johnson",
+      specialty: "Balayage & Hair Coloring",
+      image: "",
+    },
+    {
+      id: 2,
+      name: "Taylor Smith",
+      specialty: "Men's Haircuts & Styling",
+      image: "",
+    },
+    {
+      id: 3,
+      name: "Jamie Lee",
+      specialty: "Bridal & Event Styling",
+      image: "",
+    },
+  ];
 
   useEffect(() => {
     async function getSalonAndReviews() {
@@ -30,11 +52,10 @@ export default function SalonPage() {
         setSalon(salonData);
         setReviews(reviewsData.reviews || []);
 
-        // 🔥 **Calculate Average Rating**
         if (reviewsData.reviews.length > 0) {
           const totalRating = reviewsData.reviews.reduce((sum, review) => sum + review.rating, 0);
           const avgRating = totalRating / reviewsData.reviews.length;
-          setAverageRating(avgRating); // Update state
+          setAverageRating(avgRating);
         } else {
           setAverageRating(0);
         }
@@ -46,9 +67,8 @@ export default function SalonPage() {
       }
     }
     getSalonAndReviews();
-  }, [salonname]); // **Re-run when salonname changes**
+  }, [salonname]);
 
-  // ⭐ **Function to Display Star Rating**
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) =>
       i < rating ? <FaStar key={i} className="text-yellow-500" /> : <FaRegStar key={i} className="text-gray-400" />
@@ -86,7 +106,7 @@ export default function SalonPage() {
         )}
       </div>
 
-      {/* Salon Info Section */}
+      {/* 🔥 Salon Info Section (Now Above Stylists) */}
       <div className="max-w-4xl mx-auto mt-8 p-6 bg-white dark:bg-gray-800 shadow-xl rounded-2xl text-center border border-gray-300 dark:border-gray-700">
         <Card className="p-6">
           <div className="flex flex-col items-center">
@@ -98,10 +118,8 @@ export default function SalonPage() {
             <h2 className="text-3xl font-semibold mt-4 text-gray-800 dark:text-white">{salon.name}</h2>
             <p className="text-gray-600 dark:text-gray-300 mt-2">{salon.location || "Location not available"}</p>
 
-            {/* ⭐ **Dynamic Star Rating** */}
-            <div className="flex justify-center space-x-1 mt-2">
-              {renderStars(Math.round(averageRating))}
-            </div>
+            {/* ⭐ Dynamic Star Rating */}
+            <div className="flex justify-center space-x-1 mt-2">{renderStars(Math.round(averageRating))}</div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {reviews.length > 0 ? `Average Rating: ${averageRating.toFixed(1)} / 5` : "No Ratings Yet"}
             </p>
@@ -114,6 +132,26 @@ export default function SalonPage() {
             </Link>
           </div>
         </Card>
+      </div>
+
+      {/* 🔹 Our Stylists Section (Below Salon Info) */}
+      <div className="max-w-4xl mx-auto mt-12 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-300 dark:border-gray-700">
+        <h2 className="text-2xl font-semibold text-center text-gray-800 dark:text-white mb-6">Our Stylists</h2>
+        <div className="flex flex-col space-y-6">
+          {stylists.map((stylist) => (
+            <Card key={stylist.id} className="flex flex-col items-center p-6 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-md hover:shadow-lg">
+              {/* Placeholder Image Box */}
+              <div className="w-24 h-24 bg-gray-400 dark:bg-gray-600 rounded-full flex justify-center items-center shadow-md">
+                {/* No text inside, just an empty box */}
+              </div>
+              <h3 className="text-xl font-semibold mt-3 text-gray-800 dark:text-white">{stylist.name}</h3>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">{stylist.specialty}</p>
+              <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-md">
+                Book Appointment
+              </Button>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Reviews Section */}

@@ -1,28 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
-import Navbar from '@/components/Navbar';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
+import Navbar from "@/components/Navbar";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.type === 'employee') {
-      router.push('/dashboard');
+    if (user?.type === "employee") {
+      router.push("/dashboard");
     }
   }, [user, router]);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
+    <div className="relative min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white overflow-hidden">
       <Navbar />
 
-      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none z-0">
+      {/* Wave Background Animation */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-none z-0 animate-waveSlow">
         <svg
           className="animate-wave"
           xmlns="http://www.w3.org/2000/svg"
@@ -36,19 +37,36 @@ export default function Home() {
         </svg>
       </div>
 
-      <section className="flex flex-col items-center justify-center text-center py-20 px-4 relative z-10">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-tight text-gray-800 dark:text-gray-200 drop-shadow-lg">
+      {/* Hero Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="flex flex-col items-center justify-center text-center py-20 px-4 relative z-10"
+      >
+        <motion.h1
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-tight text-gray-800 dark:text-gray-200 drop-shadow-lg hover:scale-105 transition-all duration-300 ease-in-out"
+        >
           Find & Book the Best Salons Near You
-        </h1>
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="mt-4 text-lg text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-300 ease-in-out"
+        >
           Book your next appointment with ease and convenience.
-        </p>
+        </motion.p>
 
+        {/* Call-to-Action Buttons */}
         <div className="mt-8 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 10 }}
+            transition={{ type: "spring", stiffness: 120, damping: 10 }}
             className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all"
           >
             <Link href="/salons">
@@ -60,7 +78,7 @@ export default function Home() {
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 120, damping: 10, delay: 0.2 }}
+            transition={{ type: "spring", stiffness: 120, damping: 10, delay: 0.2 }}
             className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-all"
           >
             <Link href="/register">
@@ -70,7 +88,7 @@ export default function Home() {
             </Link>
           </motion.div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
