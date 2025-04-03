@@ -22,17 +22,18 @@ export async function POST(req) {
     }
 
     const userData = { 
-      id: user._id, 
+      id: user.customerId, 
       name: user.businessName || user.name, 
       type: user.businessName ? 'business' : 'customer' 
     };
 
     const cookieStore = await cookies(); // Await cookies()
     cookieStore.set('user', JSON.stringify(userData), {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      httpOnly: false, // You might consider setting this to true in production for security
+      secure: process.env.NODE_ENV === 'production', // Secure cookies in production
       sameSite: 'Lax',
       path: '/',
+      maxAge: 60 * 60 * 24 * 7, // Optional: Set maxAge for cookie expiry (7 days)
     });
 
     return new Response(JSON.stringify({ success: true, user: userData }), { status: 200 });

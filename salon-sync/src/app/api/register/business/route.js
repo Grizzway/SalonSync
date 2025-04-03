@@ -54,19 +54,31 @@ export async function POST(req) {
     // Hash the password securely
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Store business in the database
+    // Get the last used salonId
+    const lastSalon = await db.collection("Business")
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .toArray();
+
+    const lastSalonId = lastSalon.length > 0 ? lastSalon[0].salonId : 999;
+    const newSalonId = lastSalonId + 1;
+
+    // Store business in the database with the generated ID
     const result = await db.collection("Business").insertOne({
       businessName,
       email: normalizedEmail,
       password: hashedPassword,
       address,
       createdAt: new Date(),
+      rating: 0,
+      salonId: newSalonId, // New field for the salon ID
     });
 
     console.log("Business registered:", result.insertedId);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Business registered successfully!", businessId: result.insertedId }),
+      JSON.stringify({ success: true, message: "Business registered successfully!", businessId: result.insertedId, salonId: newSalonId }),
       { status: 201 }
     );
   } catch (error) {

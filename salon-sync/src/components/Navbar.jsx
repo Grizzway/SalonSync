@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import Link from "next/link";
@@ -9,6 +9,11 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  // Debugging to check if customerId is available
+  useEffect(() => {
+    console.log("User data in Navbar:", user);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -38,17 +43,28 @@ export default function Navbar() {
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
+                {user.type === "business" ? (
+                  <button
+                    onClick={() => handleNavigation("/dashboard/business")}
+                    className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    My Business
+                  </button>
+                ) : (
+                  <button
+                    onClick={() =>
+                      handleNavigation(user.id ? `/${user.id}/profile` : "/dashboard/profile")
+                    }
+                    className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    My Profile
+                  </button>
+                )}
                 <button
                   onClick={() => handleNavigation("/dashboard")}
                   className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   Dashboard
-                </button>
-                <button
-                  onClick={() => handleNavigation("/dashboard/business")}
-                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  My Business
                 </button>
                 <button
                   onClick={() => handleNavigation("/")}
