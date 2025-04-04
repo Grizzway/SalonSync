@@ -10,7 +10,7 @@ export default function RegisterCustomerPage() {
   const [message, setMessage] = useState("");
 
   const handleRegister = async (e) => {
-    e.preventDefault(); // Prevent page refresh
+    e.preventDefault();
 
     const response = await fetch("/api/register/customer", {
       method: "POST",
@@ -23,21 +23,22 @@ export default function RegisterCustomerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
-      {/* Navbar with padding fix */}
+    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
       <Navbar />
       <div className="pt-24 flex items-center justify-center p-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md text-center border border-gray-200 dark:border-gray-700">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 dark:text-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 max-w-md w-full text-center border border-purple-200 dark:border-purple-700">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-purple-700 dark:text-purple-300">
             Register as a Customer
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Fill out your details to create an account.</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Fill out your details to create an account.
+          </p>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4 mt-6">
             <input
               type="text"
               placeholder="Name"
-              className="w-full px-4 py-2 rounded-md border dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 rounded-md border border-purple-300 dark:border-purple-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-400"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -45,7 +46,7 @@ export default function RegisterCustomerPage() {
             <input
               type="email"
               placeholder="Email"
-              className="w-full px-4 py-2 rounded-md border dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 rounded-md border border-purple-300 dark:border-purple-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-400"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -53,7 +54,7 @@ export default function RegisterCustomerPage() {
             <input
               type="password"
               placeholder="Password"
-              className="w-full px-4 py-2 rounded-md border dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 rounded-md border border-purple-300 dark:border-purple-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-400"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -61,7 +62,7 @@ export default function RegisterCustomerPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white font-bold py-2 px-4 rounded-lg shadow-md"
             >
               Register
             </button>

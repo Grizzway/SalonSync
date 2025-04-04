@@ -29,7 +29,7 @@ export default function Dashboard() {
     setDropdownOpen(!dropdownOpen);
   };
 
-  if (loading) return <div className="flex justify-center items-center h-screen text-lg">Loading...</div>;
+  if (loading) return <div className="flex justify-center items-center h-screen text-lg text-purple-600">Loading...</div>;
 
   const customerOptions = [
     { title: 'Modify Profile', path: '/dashboard/profile' },
@@ -49,22 +49,23 @@ export default function Dashboard() {
   const options = user?.type === 'business' ? businessOptions : customerOptions;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
       <Navbar />
-      {/* Dashboard Grid */}
-      <div className="max-w-3xl mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-700">
-        <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-200 text-center mb-6">
+      <div className="max-w-3xl mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-xl rounded-3xl border border-purple-200 dark:border-purple-700">
+        <h2 className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 text-center mb-6">
           Welcome, {user?.name}!
         </h2>
         <div className="flex flex-col space-y-4">
           {options.map((option) => (
             <Card
               key={option.path}
-              className="cursor-pointer hover:shadow-lg transition transform hover:scale-[1.02] p-6 text-center bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+              className="cursor-pointer hover:shadow-lg transition transform hover:scale-[1.02] p-6 text-center bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-purple-600 rounded-xl"
               onClick={() => router.push(option.path)}
             >
               <CardHeader>
-                <CardTitle className="text-lg font-medium text-gray-800 dark:text-gray-200">{option.title}</CardTitle>
+                <CardTitle className="text-lg font-semibold text-purple-700 dark:text-purple-200">
+                  {option.title}
+                </CardTitle>
               </CardHeader>
             </Card>
           ))}
@@ -73,4 +74,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

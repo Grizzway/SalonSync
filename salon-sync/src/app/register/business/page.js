@@ -15,7 +15,6 @@ export default function BusinessRegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(`Checking if email ${email} exists...`);
     const res = await fetch("/api/register/business", {
       method: "POST",
       headers: {
@@ -25,14 +24,12 @@ export default function BusinessRegisterPage() {
     });
 
     const emailData = await res.json();
-    console.log("Email Check Response:", emailData);
 
     if (emailData.success === false) {
       setMessage("Email is already in use.");
       return;
     }
 
-    console.log("Email not used, proceeding with registration...");
     const response = await fetch("/api/register/business", {
       method: "POST",
       headers: {
@@ -42,7 +39,6 @@ export default function BusinessRegisterPage() {
     });
 
     const data = await response.json();
-    console.log("Registration Response:", data);
 
     if (data.success) {
       setMessage("Registration successful!");
@@ -55,12 +51,11 @@ export default function BusinessRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
-      {/* Navbar with padding fix */}
+    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
       <Navbar />
       <div className="pt-24 flex items-center justify-center p-6">
-        <div className="w-full max-w-lg bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
-          <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">
+        <div className="w-full max-w-lg bg-white dark:bg-gray-800 shadow-xl rounded-3xl p-8 border border-purple-200 dark:border-purple-800">
+          <h1 className="text-3xl font-bold text-center text-purple-700 dark:text-purple-300 mb-6">
             Business Registration
           </h1>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -73,7 +68,7 @@ export default function BusinessRegisterPage() {
                 id="businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -86,7 +81,7 @@ export default function BusinessRegisterPage() {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -99,7 +94,7 @@ export default function BusinessRegisterPage() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
@@ -112,13 +107,13 @@ export default function BusinessRegisterPage() {
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg transition-all duration-300 dark:shadow-green-900"
+              className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white font-medium py-3 rounded-lg transition-all duration-300 shadow-md dark:shadow-fuchsia-900"
             >
               Register
             </button>
@@ -129,3 +124,4 @@ export default function BusinessRegisterPage() {
     </div>
   );
 }
+

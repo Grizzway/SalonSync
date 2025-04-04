@@ -39,37 +39,34 @@ export default function LeaveReviewPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-  
-    // Retrieve customerId from the cookie
+
     const cookies = document.cookie.split('; ');
     const userCookie = cookies.find(cookie => cookie.startsWith('user='));
-  
+
     if (!userCookie) {
       setError("You must be logged in to leave a review.");
       setLoading(false);
       return;
     }
-  
-    // Parse the cookie value and log it for debugging
+
     const userData = JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
-    console.log('User Data:', userData); // Log to check structure of the cookie
-    const customerId = userData?.id; // Use id from the cookie
-  
+    const customerId = userData?.id;
+
     if (!customerId) {
       setError("You must be logged in to leave a review.");
       setLoading(false);
       return;
     }
-  
+
     try {
       const response = await fetch(`/api/reviews/${salonId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating, review, customerId }), // Pass customerId
+        body: JSON.stringify({ rating, review, customerId }),
       });
-  
+
       if (!response.ok) throw new Error("Failed to submit review");
-  
+
       router.push(`/salons/${salonId}`);
     } catch (err) {
       setError(err.message);
@@ -79,10 +76,10 @@ export default function LeaveReviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-200 dark:from-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
       <Navbar />
-      <div className="max-w-2xl mx-auto mt-12 bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-300 dark:border-gray-700">
-        <h2 className="text-3xl font-semibold text-gray-800 dark:text-white text-center mb-6">
+      <div className="max-w-2xl mx-auto mt-12 bg-white dark:bg-gray-800 shadow-xl rounded-3xl p-8 border border-purple-200 dark:border-purple-700">
+        <h2 className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 text-center mb-6">
           Leave a Review for {salon?.name || "Loading..."}
         </h2>
 
@@ -103,13 +100,13 @@ export default function LeaveReviewPage() {
             value={review}
             onChange={(e) => setReview(e.target.value)}
             placeholder="Write your review here..."
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+            className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
             required
           />
 
           <Button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg transition-all"
+            className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white py-3 rounded-lg shadow-md"
             disabled={loading}
           >
             {loading ? "Submitting..." : "Submit Review"}
