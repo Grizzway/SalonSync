@@ -39,7 +39,7 @@ export default function Dashboard() {
   ];
 
   const businessOptions = [
-    { title: 'Modify Business Page', path: '/dashboard/business' },
+    { title: 'Modify Business Page', path: '/dashboard/modifyBusinessPage' },
     { title: 'Client Schedule', path: '/dashboard/schedule' },
     { title: 'Employees', path: '/dashboard/employees' },
     { title: 'Payment History', path: '/dashboard/payments' },

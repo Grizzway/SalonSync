@@ -30,6 +30,8 @@ export async function GET(req, { params }) {
       logo: salon.logo || null,
       address: salon.address,
       theme: salon.theme || 'grey',
+      Phone: salon.Phone || null,
+      Description: salon.Description || null, // Ensure description is included if available
     };
 
     return new Response(JSON.stringify(salonData), {
