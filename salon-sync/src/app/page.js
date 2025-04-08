@@ -6,10 +6,26 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import Image from "next/image";
+
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
+  const R = 6371; // Radius of the Earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -25,16 +41,42 @@ export default function Home() {
   useEffect(() => {
     async function fetchTopSalons() {
       try {
-        const response = await fetch("/api/salon/top-rated");
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        const res = await fetch("/api/salon/top-rated");
+        const data = await res.json();
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const userLat = position.coords.latitude;
+              const userLng = position.coords.longitude;
+
+              const sorted = data.salons
+                .map((salon) => {
+                  const distance = getDistanceFromLatLonInKm(
+                    userLat,
+                    userLng,
+                    salon.latitude,
+                    salon.longitude
+                  );
+                  return { ...salon, distance };
+                })
+                .sort((a, b) => a.distance - b.distance);
+
+              setTopSalons(sorted.slice(0, 10));
+            },
+            (err) => {
+              console.warn("Location permission denied, defaulting to rating.");
+              setTopSalons(data.salons.slice(0, 10));
+            }
+          );
+        } else {
+          setTopSalons(data.salons.slice(0, 10));
         }
-        const data = await response.json();
-        setTopSalons(data.salons.slice(0, 10));
       } catch (error) {
         console.error("Error fetching top-rated salons:", error);
       }
     }
+
     fetchTopSalons();
   }, []);
 
@@ -65,7 +107,16 @@ export default function Home() {
           Your next beauty experience is just a few clicks away. Browse our top-rated salons and treat yourself today.
         </motion.p>
 
-        {!user && (
+        {user ? (
+          <div className="mt-8">
+            <Link
+              href={user.type === "business" ? "/dashboard/business" : `/${user.id}/profile`}
+              className="inline-block text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 px-8 py-3 rounded-full text-md font-semibold shadow-lg hover:shadow-xl transition"
+            >
+              👤 My Account
+            </Link>
+          </div>
+        ) : (
           <div className="mt-8">
             <Link
               href="/register"
@@ -78,7 +129,7 @@ export default function Home() {
 
         {!user && (
           <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-            Are you a salon owner?{' '}
+            Are you a salon owner?{" "}
             <Link href="/register" className="underline hover:text-fuchsia-600">
               Register your salon here.
             </Link>
@@ -97,7 +148,11 @@ export default function Home() {
               key={salon._id || index}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
+              transition={{
+                duration: 0.4,
+                ease: "easeOut",
+                delay: index * 0.1,
+              }}
               viewport={{ once: true }}
               className="transition-transform transform hover:scale-105"
             >
