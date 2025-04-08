@@ -14,7 +14,7 @@ export default function TopRatedSalonsCarousel({ topSalons }) {
         <Carousel opts={{ align: "start" }} className="w-full max-w-[1600px] px-4">
           <CarouselContent className="flex gap-2">
             {sortedSalons.map((salon, index) => (
-              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4"> 
+              <CarouselItem key={index} className="sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                 <div className="p-2 flex justify-center">
                   <Link href={`/salons/${salon.salonId}`}>
                     <Card className="w-[400px] h-[400px] flex justify-center items-center rounded-xl shadow-md bg-white overflow-hidden relative group">
@@ -22,9 +22,17 @@ export default function TopRatedSalonsCarousel({ topSalons }) {
                         {/* Logo section */}
                         <div className="w-32 h-32 rounded-full overflow-hidden mb-6 bg-gray-200 flex justify-center items-center">
                           {salon.logo ? (
-                            <img src={salon.logo} alt={salon.businessName} className="object-cover w-full h-full" />
+                            <img
+                              src={salon.logo || "/images/placeholder-salon.jpg"}
+                              alt={salon.businessName}
+                              className="object-cover w-full h-full"
+                            />
                           ) : (
-                            <span className="text-4xl text-gray-500">?</span>
+                            <img
+                              src="/images/placeholder-salon.jpg"
+                              alt="Placeholder"
+                              className="object-cover w-full h-full"
+                            />
                           )}
                         </div>
 

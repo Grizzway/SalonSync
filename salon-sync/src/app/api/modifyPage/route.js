@@ -1,48 +1,78 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
-import { ObjectId } from 'mongodb';
+import { v2 as cloudinary } from 'cloudinary';
+import formidable from 'formidable';
+import fs from 'fs';
 
-export default async function handler(req, res) {
-    const { salonId } = req.query; // Expecting salonId to be passed as a query parameter
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-    try {
-        // Validate salonId
-        if (!ObjectId.isValid(salonId)) {
-            return res.status(400).json({ error: 'Invalid salonId' });
-        }
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-        const { db } = await connectToDatabase();
+export default async function handler(req) {
+  const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
+  const salonId = searchParams.get('salonId');
 
-        if (req.method === 'GET') {
-            // Fetch business details
-            const salon = await db.collection('salons').findOne({ _id: new ObjectId(salonId) });
-            if (!salon) {
-                return res.status(404).json({ error: 'Salon not found' });
-            }
-            return res.status(200).json(salon);
-        } else if (req.method === 'PUT') {
-            // Update business details
-            const { Description, Phone, address, email } = req.body;
+  if (!salonId) {
+    return new Response(JSON.stringify({ error: 'Missing salonId' }), { status: 400 });
+  }
 
-            const result = await db.collection('salons').updateOne(
-                { _id: new ObjectId(salonId) },
-                { $set: { Description, Phone, address, email } }
-            );
+  try {
+    const { db } = await connectToDatabase();
 
-            if (result.matchedCount === 0) {
-                return res.status(404).json({ error: 'Salon not found' });
-            }
-
-            if (result.modifiedCount === 0) {
-                return res.status(200).json({ message: 'No changes made to the salon details' });
-            }
-
-            return res.status(200).json({ message: 'Salon details updated successfully' });
-        } else {
-            // Method not allowed
-            return res.status(405).json({ error: 'Method Not Allowed' });
-        }
-    } catch (error) {
-        console.error('Error in modifyPage API:', error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+    if (req.method === 'GET') {
+      const salon = await db.collection('salons').findOne({ salonId: parseInt(salonId) });
+      if (!salon) return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
+      return new Response(JSON.stringify(salon), { status: 200 });
     }
+
+    if (req.method === 'PUT') {
+      const form = new formidable.IncomingForm({ multiples: false });
+
+      const data = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields, files) => {
+          if (err) reject(err);
+          else resolve({ fields, files });
+        });
+      });
+
+      const { fields, files } = data;
+
+      const updateFields = {
+        Description: fields.description,
+        Phone: fields.phone,
+        address: fields.address,
+        email: fields.email,
+      };
+
+      if (files.logo) {
+        const logoUpload = await cloudinary.uploader.upload(files.logo[0].filepath, {
+          folder: 'salons',
+        });
+        updateFields.logo = logoUpload.secure_url;
+      }
+
+      const result = await db.collection('salons').updateOne(
+        { salonId: parseInt(salonId) },
+        { $set: updateFields }
+      );
+
+      if (result.matchedCount === 0) {
+        return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
+      }
+
+      return new Response(JSON.stringify({ message: 'Salon details updated successfully' }), { status: 200 });
+    }
+
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
+  } catch (error) {
+    console.error('Error in modifyPage API:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  }
 }
