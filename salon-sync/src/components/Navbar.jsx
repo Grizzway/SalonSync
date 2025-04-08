@@ -9,8 +9,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  
-  // Debugging to check if customerId is available
+
   useEffect(() => {
     console.log("User data in Navbar:", user);
   }, [user]);
@@ -21,13 +20,13 @@ export default function Navbar() {
   };
 
   const handleNavigation = (path) => {
-    setDropdownOpen(false); // Close dropdown after clicking
+    setDropdownOpen(false);
     router.push(path);
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-900 shadow-md p-4 flex justify-between items-center relative z-50">
-      <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-white">
+    <nav className="bg-gradient-to-r from-purple-100 via-purple-200 to-white dark:from-gray-900 dark:to-gray-800 shadow-md px-6 py-4 flex justify-between items-center relative z-50 border-b border-purple-300 dark:border-purple-700">
+      <Link href="/" className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 tracking-tight">
         SalonSync
       </Link>
 
@@ -36,17 +35,17 @@ export default function Navbar() {
           <div className="relative inline-block text-left">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg w-full focus:outline-none"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full shadow transition-all duration-200"
             >
               {user.businessName || "My Account"} ▼
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
+              <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-purple-200 dark:border-purple-700 z-50">
                 {user.type === "business" ? (
                   <button
                     onClick={() => handleNavigation("/dashboard/business")}
-                    className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                   >
                     My Business
                   </button>
@@ -55,26 +54,26 @@ export default function Navbar() {
                     onClick={() =>
                       handleNavigation(user.id ? `/${user.id}/profile` : "/dashboard/profile")
                     }
-                    className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                   >
                     My Profile
                   </button>
                 )}
                 <button
                   onClick={() => handleNavigation("/dashboard")}
-                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                 >
                   Dashboard
                 </button>
                 <button
                   onClick={() => handleNavigation("/")}
-                  className="block w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                 >
                   Homepage
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-4 py-3 hover:bg-red-500 hover:text-white dark:hover:bg-red-600"
+                  className="block w-full text-left px-5 py-3 hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition"
                 >
                   Logout
                 </button>
@@ -83,10 +82,16 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="space-x-4">
-            <Link href="/login" className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            <Link
+              href="/login"
+              className="px-5 py-2 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white rounded-full font-semibold shadow hover:from-purple-600 hover:to-fuchsia-600 transition"
+            >
               Login
             </Link>
-            <Link href="/register" className="px-4 py-2 bg-green-600 text-white rounded-lg">
+            <Link
+              href="/register"
+              className="px-5 py-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-full font-semibold shadow hover:from-green-500 hover:to-emerald-600 transition"
+            >
               Register
             </Link>
           </div>
