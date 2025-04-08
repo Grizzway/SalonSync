@@ -6,31 +6,18 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Search } from "lucide-react";
 import Image from "next/image";
-
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return Infinity;
-  const R = 6371; // Radius of the Earth in km
-  const dLat = deg2rad(lat2 - lat1);
-  const dLon = deg2rad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(deg2rad(lat1)) *
-      Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-function deg2rad(deg) {
-  return deg * (Math.PI / 180);
-}
 
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
   const [topSalons, setTopSalons] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [salonList, setSalonList] = useState([]);
+  const [filteredSalons, setFilteredSalons] = useState([]);
 
   useEffect(() => {
     if (user?.type === "employee") {
@@ -41,44 +28,51 @@ export default function Home() {
   useEffect(() => {
     async function fetchTopSalons() {
       try {
-        const res = await fetch("/api/salon/top-rated");
-        const data = await res.json();
-
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const userLat = position.coords.latitude;
-              const userLng = position.coords.longitude;
-
-              const sorted = data.salons
-                .map((salon) => {
-                  const distance = getDistanceFromLatLonInKm(
-                    userLat,
-                    userLng,
-                    salon.latitude,
-                    salon.longitude
-                  );
-                  return { ...salon, distance };
-                })
-                .sort((a, b) => a.distance - b.distance);
-
-              setTopSalons(sorted.slice(0, 10));
-            },
-            (err) => {
-              console.warn("Location permission denied, defaulting to rating.");
-              setTopSalons(data.salons.slice(0, 10));
-            }
-          );
-        } else {
-          setTopSalons(data.salons.slice(0, 10));
-        }
+        const response = await fetch("/api/salon/top-rated");
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        setTopSalons(data.salons.slice(0, 10));
       } catch (error) {
         console.error("Error fetching top-rated salons:", error);
       }
     }
-
     fetchTopSalons();
   }, []);
+
+  useEffect(() => {
+    async function fetchAllSalons() {
+      try {
+        const response = await fetch("/api/salon");
+        if (!response.ok) throw new Error("Failed to fetch salons");
+        const data = await response.json();
+        setSalonList(data);
+      } catch (err) {
+        console.error("Error fetching all salons:", err);
+      }
+    }
+    fetchAllSalons();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredSalons([]);
+      return;
+    }
+    const filtered = salonList.filter((salon) =>
+      salon.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredSalons(filtered);
+  }, [searchQuery, salonList]);
+
+  const handleSearchSelect = (salon) => {
+    router.push(`/salons/${salon.id}`);
+  };
+
+  const handleEnter = (e) => {
+    if (e.key === "Enter" && filteredSalons.length > 0) {
+      router.push(`/salons/${filteredSalons[0].id}`);
+    }
+  };
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white overflow-hidden font-sans">
@@ -98,25 +92,32 @@ export default function Home() {
         >
           Discover & Book Beautiful Salons
         </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto"
-        >
-          Your next beauty experience is just a few clicks away. Browse our top-rated salons and treat yourself today.
-        </motion.p>
 
-        {user ? (
-          <div className="mt-8">
-            <Link
-              href={user.type === "business" ? "/dashboard/business" : `/${user.id}/profile`}
-              className="inline-block text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 px-8 py-3 rounded-full text-md font-semibold shadow-lg hover:shadow-xl transition"
-            >
-              👤 My Account
-            </Link>
-          </div>
-        ) : (
+        <div className="relative max-w-md mx-auto mt-6">
+          <input
+            type="text"
+            placeholder="Search for a salon"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleEnter}
+            className="w-full px-4 py-3 border border-purple-300 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-purple-400 text-gray-900"
+          />
+          {filteredSalons.length > 0 && (
+            <div className="absolute z-10 w-full bg-white dark:bg-gray-800 mt-1 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
+              {filteredSalons.map((salon, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleSearchSelect(salon)}
+                  className="px-4 py-3 hover:bg-purple-100 dark:hover:bg-gray-700 cursor-pointer text-left"
+                >
+                  {salon.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {!user && (
           <div className="mt-8">
             <Link
               href="/register"
@@ -129,11 +130,22 @@ export default function Home() {
 
         {!user && (
           <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-            Are you a salon owner?{" "}
+            Are you a salon owner?{' '}
             <Link href="/register" className="underline hover:text-fuchsia-600">
               Register your salon here.
             </Link>
           </p>
+        )}
+
+        {user && (
+          <div className="mt-8">
+            <Link
+              href="/dashboard"
+              className="inline-block text-white bg-gradient-to-r from-fuchsia-500 to-purple-500 px-8 py-3 rounded-full text-md font-semibold shadow-lg hover:shadow-xl transition"
+            >
+              👤 My Account
+            </Link>
+          </div>
         )}
       </motion.section>
 
@@ -148,11 +160,7 @@ export default function Home() {
               key={salon._id || index}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.4,
-                ease: "easeOut",
-                delay: index * 0.1,
-              }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
               className="transition-transform transform hover:scale-105"
             >

@@ -27,6 +27,7 @@ export default function ModifyBusinessPage() {
 
   const fetchBusinessDetails = async () => {
     try {
+        console.log("🔍 Fetching salon details for salonId:", user?.salonId);
       const res = await fetch(`/api/modifyPage?salonId=${user.salonId}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
