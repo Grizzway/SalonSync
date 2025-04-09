@@ -1,7 +1,9 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { v2 as cloudinary } from 'cloudinary';
-import { IncomingForm } from 'formidable';  // Correct import
+import { IncomingForm } from 'formidable'; 
 import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -27,9 +29,9 @@ export default async function handler(req) {
     const { db } = await connectToDatabase();
 
     if (req.method === 'GET') {
-      const salon = await db.collection('salons').findOne({ salonId: parseInt(salonId) });
-      if (!salon) return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
-      return new Response(JSON.stringify(salon), { status: 200 });
+      const user = await db.collection('Business').findOne({ salonId: parseInt(salonId) });
+      if (!user) return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
+      return new Response(JSON.stringify(user), { status: 200 });
     }
 
     if (req.method === 'PUT') {
@@ -49,6 +51,7 @@ export default async function handler(req) {
         Phone: fields.phone,
         address: fields.address,
         email: fields.email,
+        salonId: parseInt(salonId),
       };
 
       if (files.logo) {
@@ -58,7 +61,7 @@ export default async function handler(req) {
         updateFields.logo = logoUpload.secure_url;
       }
 
-      const result = await db.collection('salons').updateOne(
+      const result = await db.collection('Business').updateOne(
         { salonId: parseInt(salonId) },
         { $set: updateFields }
       );
@@ -74,5 +77,48 @@ export default async function handler(req) {
   } catch (error) {
     console.error('Error in modifyPage API:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  try {
+    const { email, password } = await req.json();
+    const { db } = await connectToDatabase();
+
+    // Find the business user by email
+    const user = await db.collection('Business').findOne({ email });
+    if (!user) {
+      return new Response(JSON.stringify({ success: false, message: 'User not found' }), { status: 404 });
+    }
+
+    // Validate the password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid password' }), { status: 401 });
+    }
+
+    // Prepare user data for the response
+    const userData = {
+      id: user._id.toString(),
+      salonId: user.salonId,
+      businessName: user.businessName,
+      type: 'business',
+    };
+
+    // Set the user data in cookies
+    const cookieStore = cookies();
+    cookieStore.set('user', JSON.stringify(userData), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Return the user data
+    return new Response(JSON.stringify({ success: true, user: userData }), { status: 200 });
+  } catch (error) {
+    console.error('Login Error:', error);
+    return new Response(JSON.stringify({ success: false, message: 'Internal Server Error' }), { status: 500 });
   }
 }

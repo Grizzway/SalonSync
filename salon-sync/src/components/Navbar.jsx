@@ -42,21 +42,12 @@ export default function Navbar() {
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-purple-200 dark:border-purple-700 z-50">
-                {user.type === "business" ? (
+                {user.type === "business" && user.salonId && (
                   <button
-                    onClick={() => handleNavigation("/dashboard/business")}
+                    onClick={() => handleNavigation(`/salons/${user.salonId}`)}
                     className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                   >
-                    My Business
-                  </button>
-                ) : (
-                  <button
-                    onClick={() =>
-                      handleNavigation(user.id ? `/${user.id}/profile` : "/dashboard/profile")
-                    }
-                    className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
-                  >
-                    My Profile
+                    My Salon
                   </button>
                 )}
                 <button

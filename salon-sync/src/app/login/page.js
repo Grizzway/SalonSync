@@ -17,18 +17,15 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login/', {
+      const res = await fetch('/api/login/business', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
       if (data.success) {
-        login(data.user);
-        setMessage('Login successful!');
+        login(data.user); // Ensure `data.user` contains `salonId`
         router.push('/');
       } else {
         setMessage(data.message || 'Login failed');
