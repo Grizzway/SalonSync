@@ -25,7 +25,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-purple-100 via-purple-200 to-white dark:from-gray-900 dark:to-gray-800 shadow-md px-6 py-4 flex justify-between items-center relative z-50 border-b border-purple-300 dark:border-purple-700">
+    <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-purple-100 via-purple-200 to-white dark:from-gray-900 dark:to-gray-800 shadow-md px-6 py-4 flex justify-between items-center z-50 border-b border-purple-300 dark:border-purple-700">
       <Link href="/" className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 tracking-tight">
         SalonSync
       </Link>
