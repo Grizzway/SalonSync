@@ -1,14 +1,14 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Star, Search } from "lucide-react";
+import { Star } from "lucide-react";
 import Image from "next/image";
 
 export default function Home() {
@@ -17,7 +17,6 @@ export default function Home() {
   const [topSalons, setTopSalons] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [salonList, setSalonList] = useState([]);
-  const [filteredSalons, setFilteredSalons] = useState([]);
 
   useEffect(() => {
     if (user?.type === "employee") {
@@ -40,28 +39,27 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    async function fetchAllSalons() {
-      try {
-        const response = await fetch("/api/salon");
-        if (!response.ok) throw new Error("Failed to fetch salons");
-        const data = await response.json();
-        setSalonList(data);
-      } catch (err) {
-        console.error("Error fetching all salons:", err);
+    const timeout = setTimeout(() => {
+      async function fetchAllSalons() {
+        try {
+          const response = await fetch("/api/salon");
+          if (!response.ok) throw new Error("Failed to fetch salons");
+          const data = await response.json();
+          setSalonList(data);
+        } catch (err) {
+          console.error("Error fetching all salons:", err);
+        }
       }
-    }
-    fetchAllSalons();
+      fetchAllSalons();
+    }, 300);
+    return () => clearTimeout(timeout);
   }, []);
 
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredSalons([]);
-      return;
-    }
-    const filtered = salonList.filter((salon) =>
+  const filteredSalons = useMemo(() => {
+    if (searchQuery.trim() === "") return [];
+    return salonList.filter((salon) =>
       salon.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    setFilteredSalons(filtered);
   }, [searchQuery, salonList]);
 
   const handleSearchSelect = (salon) => {
@@ -164,12 +162,12 @@ export default function Home() {
               viewport={{ once: true }}
               className="transition-transform transform hover:scale-105"
             >
+              
               <Link href={`/salons/${salon.salonId || salon._id}`} className="block h-full">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-2xl border border-gray-100 dark:border-rose-900 h-full flex flex-col justify-between">
                   <div className="w-full h-52 relative rounded-2xl overflow-hidden mb-4">
                     <Image
                       src={salon.imageUrl || "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png"}
-                      onError={(e) => (e.target.src = "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png")}
                       alt={salon.businessName || "Salon image"}
                       layout="fill"
                       objectFit="cover"

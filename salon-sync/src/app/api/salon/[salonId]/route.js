@@ -1,9 +1,10 @@
+// src/app/api/salon/[salonId]/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
-import cloudinary from '@/app/utils/cloudinary'; // make sure this file exists
+import cloudinary from '@/app/utils/cloudinary';
 import { Readable } from 'stream';
 
-export async function GET(req, { params }) {
-  const { salonId } = await params;
+export async function GET(req, context) {
+  const { salonId } = context.params;
 
   try {
     const { db } = await connectToDatabase();
@@ -18,6 +19,11 @@ export async function GET(req, { params }) {
       return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
     }
 
+    const employees = await db.collection('Employee')
+      .find({ salonId: parseInt(salonId, 10) })
+      .project({ employeeId: 1, name: 1, profilePicture: 1, bio: 1, email: 1 })
+      .toArray();
+
     const salonData = {
       id: salon.salonId,
       name: salon.businessName,
@@ -27,6 +33,7 @@ export async function GET(req, { params }) {
       theme: salon.theme || 'grey',
       Phone: salon.Phone || null,
       Description: salon.Description || null,
+      employees: employees || [],
     };
 
     return new Response(JSON.stringify(salonData), {
@@ -39,11 +46,11 @@ export async function GET(req, { params }) {
   }
 }
 
-export async function PATCH(req, { params }) {
-  const { salonId } = params;
-  const { db } = await connectToDatabase();
+export async function PATCH(req, context) {
+  const { salonId } = context.params;
 
   try {
+    const { db } = await connectToDatabase();
     const formData = await req.formData();
     const file = formData.get('image');
 
@@ -54,8 +61,7 @@ export async function PATCH(req, { params }) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Upload image to Cloudinary
-    const uploadPromise = new Promise((resolve, reject) => {
+    const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: 'salons' },
         (error, result) => {
@@ -63,23 +69,19 @@ export async function PATCH(req, { params }) {
           resolve(result);
         }
       );
-
       Readable.from(buffer).pipe(stream);
     });
 
-    const result = await uploadPromise;
-
-    // Update the salon's banner image in MongoDB
     const updateResult = await db.collection('Business').updateOne(
       { salonId: parseInt(salonId, 10) },
-      { $set: { banner: result.secure_url } }
+      { $set: { banner: uploadResult.secure_url } }
     );
 
     if (updateResult.matchedCount === 0) {
       return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
     }
 
-    return new Response(JSON.stringify({ success: true, imageUrl: result.secure_url }), {
+    return new Response(JSON.stringify({ success: true, imageUrl: uploadResult.secure_url }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -88,3 +90,4 @@ export async function PATCH(req, { params }) {
     return new Response(JSON.stringify({ error: 'Image upload failed' }), { status: 500 });
   }
 }
+

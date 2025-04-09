@@ -1,3 +1,4 @@
+// ✅ FILE: src/app/salons/[salonId]/page.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,34 +19,29 @@ export default function SalonPage() {
   const [averageRating, setAverageRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const stylists = [
-    { id: 1, name: "Alex Johnson", specialty: "Balayage & Hair Coloring" },
-    { id: 2, name: "Taylor Smith", specialty: "Men's Haircuts & Styling" },
-    { id: 3, name: "Jamie Lee", specialty: "Bridal & Event Styling" },
-  ];
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
-    async function getSalonAndReviews() {
+    async function getSalonData() {
       try {
-        const salonRes = await fetch(`/api/salon/${salonId}`);
-        if (!salonRes.ok) throw new Error("Failed to load salon data");
-        const salonData = await salonRes.json();
+        const [salonRes, reviewsRes] = await Promise.all([
+          fetch(`/api/salon/${salonId}`),
+          fetch(`/api/reviews/${salonId}`)
+        ]);
 
-        const reviewsRes = await fetch(`/api/reviews/${salonId}`);
-        if (!reviewsRes.ok) throw new Error("Failed to load reviews data");
+        if (!salonRes.ok) throw new Error("Failed to load salon data");
+        if (!reviewsRes.ok) throw new Error("Failed to load reviews");
+
+        const salonData = await salonRes.json();
         const reviewsData = await reviewsRes.json();
 
-        const reviewsArray = Array.isArray(reviewsData.reviews) ? reviewsData.reviews : [];
         setSalon(salonData);
-        setReviews(reviewsArray);
+        setEmployees(Array.isArray(salonData.employees) ? salonData.employees : []);
+        setReviews(Array.isArray(reviewsData.reviews) ? reviewsData.reviews : []);
 
-        if (reviewsArray.length > 0) {
-          const totalRating = reviewsArray.reduce((sum, review) => sum + review.rating, 0);
-          const avgRating = totalRating / reviewsArray.length;
-          setAverageRating(avgRating);
-        } else {
-          setAverageRating(0);
+        if (reviewsData.reviews?.length > 0) {
+          const total = reviewsData.reviews.reduce((sum, r) => sum + r.rating, 0);
+          setAverageRating(total / reviewsData.reviews.length);
         }
       } catch (err) {
         console.error("Fetch error:", err);
@@ -54,32 +50,28 @@ export default function SalonPage() {
         setLoading(false);
       }
     }
-    getSalonAndReviews();
+    getSalonData();
   }, [salonId]);
 
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) =>
+  const renderStars = (rating) => (
+    Array.from({ length: 5 }, (_, i) =>
       i < rating ? <FaStar key={i} className="text-yellow-500" /> : <FaRegStar key={i} className="text-gray-400" />
-    );
-  };
+    )
+  );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <Navbar />
-        <p className="text-lg text-purple-600 dark:text-purple-300">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <Navbar />
+      <p className="text-lg text-purple-600 dark:text-purple-300">Loading...</p>
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <Navbar />
-        <p className="text-lg text-red-500">{error}</p>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
+      <Navbar />
+      <p className="text-lg text-red-500">{error}</p>
+    </div>
+  );
 
   const isSalonUser = user?.type === 'business';
   const isCurrentSalon = isSalonUser && user?.businessName === salon.name;
@@ -127,18 +119,28 @@ export default function SalonPage() {
 
       <div className="max-w-4xl mx-auto mt-12 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-3xl border border-purple-200 dark:border-purple-700">
         <h2 className="text-2xl font-semibold text-center text-purple-700 dark:text-purple-300 mb-6">Our Stylists</h2>
-        <div className="flex flex-col space-y-6">
-          {stylists.map((stylist) => (
-            <Card key={stylist.id} className="flex flex-col items-center p-6 bg-purple-50 dark:bg-gray-900 rounded-xl shadow-md hover:shadow-lg">
-              <div className="w-24 h-24 bg-gray-400 dark:bg-gray-600 rounded-full flex justify-center items-center shadow-md"></div>
-              <h3 className="text-xl font-semibold mt-3 text-gray-800 dark:text-white">{stylist.name}</h3>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">{stylist.specialty}</p>
-              <Button className="mt-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white py-2 px-4 rounded-lg shadow-md">
-                Book Appointment
-              </Button>
-            </Card>
-          ))}
-        </div>
+        {employees.length === 0 ? (
+          <p className="text-center text-gray-500 dark:text-gray-400">No stylists available for this salon yet.</p>
+        ) : (
+          <div className="flex flex-col space-y-6">
+            {employees.map((stylist) => (
+              <Card key={stylist.employeeId} className="flex flex-col items-center p-6 bg-purple-50 dark:bg-gray-900 rounded-xl shadow-md hover:shadow-lg">
+                <div className="w-24 h-24 bg-gray-400 dark:bg-gray-600 rounded-full flex justify-center items-center shadow-md">
+                  {stylist.profilePicture ? (
+                    <Image src={stylist.profilePicture} alt={stylist.name} width={96} height={96} className="rounded-full object-cover" />
+                  ) : (
+                    <span className="text-white font-semibold">No Image</span>
+                  )}
+                </div>
+                <h3 className="text-xl font-semibold mt-3 text-gray-800 dark:text-white">{stylist.name}</h3>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">{stylist.bio || "No bio provided."}</p>
+                <Button className="mt-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white py-2 px-4 rounded-lg shadow-md">
+                  Book Appointment
+                </Button>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto mt-12 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-3xl border border-purple-200 dark:border-purple-700">

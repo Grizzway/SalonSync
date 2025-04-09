@@ -15,7 +15,7 @@ export const config = {
   },
 };
 
-// Read the incoming form manually
+// PUT: Update salon info
 export async function PUT(req) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const salonId = searchParams.get('salonId');
@@ -32,6 +32,7 @@ export async function PUT(req) {
     const email = formData.get('email');
     const address = formData.get('address');
     const logoFile = formData.get('logo');
+    const bannerFile = formData.get('banner');
 
     const updateFields = {
       Phone: phone,
@@ -40,26 +41,31 @@ export async function PUT(req) {
       address,
     };
 
+    // Upload logo if present
     if (logoFile && typeof logoFile === 'object') {
-      const arrayBuffer = await logoFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      const uploadRes = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'salons' },
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
-        );
-        stream.end(buffer);
+      const logoBuffer = Buffer.from(await logoFile.arrayBuffer());
+      const logoUpload = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream({ folder: 'salons/logos' }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }).end(logoBuffer);
       });
+      updateFields.logo = logoUpload.secure_url;
+    }
 
-      updateFields.logo = uploadRes.secure_url;
+    // Upload banner if present
+    if (bannerFile && typeof bannerFile === 'object') {
+      const bannerBuffer = Buffer.from(await bannerFile.arrayBuffer());
+      const bannerUpload = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream({ folder: 'salons/banners' }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        }).end(bannerBuffer);
+      });
+      updateFields.banner = bannerUpload.secure_url;
     }
 
     const { db } = await connectToDatabase();
-
     const result = await db.collection('Business').updateOne(
       { salonId: parseInt(salonId) },
       { $set: updateFields }
@@ -76,7 +82,7 @@ export async function PUT(req) {
   }
 }
 
-// GET still works fine
+// GET: Fetch salon info
 export async function GET(req) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const salonId = searchParams.get('salonId');
@@ -99,4 +105,3 @@ export async function GET(req) {
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
-
