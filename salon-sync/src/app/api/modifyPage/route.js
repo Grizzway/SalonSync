@@ -1,9 +1,6 @@
 // src/app/api/modifyPage/route.js
-
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { v2 as cloudinary } from 'cloudinary';
-import formidable from 'formidable';
-import fs from 'fs';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,75 +8,59 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Required to disable built-in body parsing
+// Disable body parser
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// GET: Fetch salon info by salonId
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const salonId = searchParams.get('salonId');
-
-  if (!salonId) {
-    return new Response(JSON.stringify({ error: 'Missing salonId' }), { status: 400 });
-  }
-
-  try {
-    const { db } = await connectToDatabase();
-    const salon = await db.collection('salons').findOne({ salonId: parseInt(salonId) });
-
-    if (!salon) {
-      return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
-    }
-
-    return new Response(JSON.stringify(salon), { status: 200 });
-  } catch (error) {
-    console.error('GET error in modifyPage:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-  }
-}
-
-// PUT: Update salon info by salonId
+// Read the incoming form manually
 export async function PUT(req) {
-  const { searchParams } = new URL(req.url);
+  const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const salonId = searchParams.get('salonId');
 
   if (!salonId) {
     return new Response(JSON.stringify({ error: 'Missing salonId' }), { status: 400 });
   }
 
-  const form = new formidable.IncomingForm({ multiples: false });
-
   try {
-    const data = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve({ fields, files });
-      });
-    });
+    const formData = await req.formData();
 
-    const { fields, files } = data;
+    const phone = formData.get('phone');
+    const description = formData.get('description');
+    const email = formData.get('email');
+    const address = formData.get('address');
+    const logoFile = formData.get('logo');
 
     const updateFields = {
-      Description: fields.description,
-      Phone: fields.phone,
-      address: fields.address,
-      email: fields.email,
+      Phone: phone,
+      Description: description,
+      email,
+      address,
     };
 
-    if (files.logo) {
-      const upload = await cloudinary.uploader.upload(files.logo[0].filepath, {
-        folder: 'salons',
+    if (logoFile && typeof logoFile === 'object') {
+      const arrayBuffer = await logoFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const uploadRes = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'salons' },
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          }
+        );
+        stream.end(buffer);
       });
-      updateFields.logo = upload.secure_url;
+
+      updateFields.logo = uploadRes.secure_url;
     }
 
     const { db } = await connectToDatabase();
 
-    const result = await db.collection('salons').updateOne(
+    const result = await db.collection('Business').updateOne(
       { salonId: parseInt(salonId) },
       { $set: updateFields }
     );
@@ -88,9 +69,34 @@ export async function PUT(req) {
       return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
     }
 
-    return new Response(JSON.stringify({ message: 'Salon details updated successfully' }), { status: 200 });
-  } catch (error) {
-    console.error('PUT error in modifyPage:', error);
+    return new Response(JSON.stringify({ message: 'Salon updated successfully' }), { status: 200 });
+  } catch (err) {
+    console.error('PUT error in modifyPage:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
+
+// GET still works fine
+export async function GET(req) {
+  const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
+  const salonId = searchParams.get('salonId');
+
+  if (!salonId) {
+    return new Response(JSON.stringify({ error: 'Missing salonId' }), { status: 400 });
+  }
+
+  try {
+    const { db } = await connectToDatabase();
+    const salon = await db.collection('Business').findOne({ salonId: parseInt(salonId) });
+
+    if (!salon) {
+      return new Response(JSON.stringify({ error: 'Salon not found' }), { status: 404 });
+    }
+
+    return new Response(JSON.stringify(salon), { status: 200 });
+  } catch (err) {
+    console.error('GET error in modifyPage:', err);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  }
+}
+

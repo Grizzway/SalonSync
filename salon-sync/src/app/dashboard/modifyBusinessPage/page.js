@@ -27,7 +27,7 @@ export default function ModifyBusinessPage() {
 
   const fetchBusinessDetails = async () => {
     try {
-        console.log("🔍 Fetching salon details for salonId:", user?.salonId);
+      console.log("🔍 Fetching salon details for salonId:", user?.salonId);
       const res = await fetch(`/api/modifyPage?salonId=${user.salonId}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
@@ -75,7 +75,22 @@ export default function ModifyBusinessPage() {
           <input type="text" placeholder="Description" value={Description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border border-gray-300 rounded" />
           <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-2 border border-gray-300 rounded" />
           <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full p-2 border border-gray-300 rounded" />
-          <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files[0])} className="w-full p-2 border border-gray-300 rounded" />
+          
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setLogo(e.target.files[0])}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+
+          {logo && (
+            <img
+              src={URL.createObjectURL(logo)}
+              alt="Selected Logo Preview"
+              className="w-32 h-32 rounded-full object-cover mt-4"
+            />
+          )}
+
           <button type="submit" className="w-full bg-purple-600 text-white p-2 rounded hover:bg-purple-700">Update</button>
         </form>
       </div>

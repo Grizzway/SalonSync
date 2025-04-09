@@ -168,7 +168,8 @@ export default function Home() {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-2xl border border-gray-100 dark:border-rose-900 h-full flex flex-col justify-between">
                   <div className="w-full h-52 relative rounded-2xl overflow-hidden mb-4">
                     <Image
-                      src={salon.imageUrl || "/placeholder-salon.jpg"}
+                      src={salon.imageUrl || "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png"}
+                      onError={(e) => (e.target.src = "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png")}
                       alt={salon.businessName || "Salon image"}
                       layout="fill"
                       objectFit="cover"

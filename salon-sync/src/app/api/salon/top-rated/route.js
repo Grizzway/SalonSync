@@ -32,8 +32,11 @@ export async function GET() {
         businessName: business.businessName,
         address: business.address,
         rating: ratingData?.avgRating || 0,
-        reviewCount: ratingData?.reviewCount || 0
+        reviewCount: ratingData?.reviewCount || 0,
+        imageUrl: business.logo || "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png"
+
       };
+      
     });
 
     return new Response(JSON.stringify({ salons: allSalons }), {
