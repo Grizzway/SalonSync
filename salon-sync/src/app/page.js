@@ -20,9 +20,12 @@ export default function Home() {
 
   useEffect(() => {
     if (user?.type === "employee") {
+      router.push("/dashboard/employee");
+    } else if (user?.type === "business") {
       router.push("/dashboard");
     }
   }, [user, router]);
+  
 
   useEffect(() => {
     async function fetchTopSalons() {
@@ -134,7 +137,14 @@ export default function Home() {
             </Link>
           </p>
         )}
-
+        {!user && (
+  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+    Employee?{' '}
+    <Link href="/login/employee" className="underline hover:text-fuchsia-600">
+      Sign in here.
+    </Link>
+  </p>
+)}
         {user && (
           <div className="mt-8">
             <Link

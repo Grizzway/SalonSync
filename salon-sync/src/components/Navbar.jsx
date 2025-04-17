@@ -28,7 +28,10 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-gradient-to-r from-purple-100 via-purple-200 to-white dark:from-gray-900 dark:to-gray-800 shadow-md px-6 py-4 flex justify-between items-center z-50 border-b border-purple-300 dark:border-purple-700">
-      <Link href="/" className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 tracking-tight">
+      <Link
+        href="/"
+        className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 tracking-tight"
+      >
         SalonSync
       </Link>
 
@@ -48,7 +51,7 @@ export default function Navbar() {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full shadow transition-all duration-200"
               >
-                {user.businessName || "My Account"} ▼
+                {user.businessName || user.name || "My Account"} ▼
               </button>
 
               {dropdownOpen && (
@@ -61,18 +64,25 @@ export default function Navbar() {
                       My Salon
                     </button>
                   )}
+
                   <button
-                    onClick={() => handleNavigation("/dashboard")}
+                    onClick={() =>
+                      user.type === "employee"
+                        ? handleNavigation("/dashboard/employee")
+                        : handleNavigation("/dashboard")
+                    }
                     className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                   >
                     Dashboard
                   </button>
+
                   <button
                     onClick={() => handleNavigation("/")}
                     className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
                   >
                     Homepage
                   </button>
+
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-5 py-3 hover:bg-red-500 hover:text-white dark:hover:bg-red-600 transition"

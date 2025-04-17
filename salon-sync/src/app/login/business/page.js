@@ -1,3 +1,4 @@
+// ✅ Updated /login/business/page.js to ensure proper redirect and cookie compatibility
 "use client";
 
 import { useState } from 'react';
@@ -22,12 +23,12 @@ export default function BusinessLoginPage() {
         },
         body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await res.json();
       if (data.success) {
         login(data.user);
         setMessage('Login successful!');
-        router.push('/');
+        router.push('/dashboard'); // ✅ FIXED: Redirect to dashboard
       } else {
         setMessage(data.message || 'Login failed');
       }
@@ -35,7 +36,7 @@ export default function BusinessLoginPage() {
       console.error('Login error:', error);
       setMessage('An error occurred. Please try again.');
     }
-  };
+  };  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex items-center justify-center p-4">

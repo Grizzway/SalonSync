@@ -22,15 +22,14 @@ export async function POST(req) {
       return new Response(JSON.stringify({ success: false, message: 'Incorrect password' }), { status: 401 });
     }
 
+    // ✅ Match cookie structure used in /login route
     const userData = {
+      id: user.salonId,
       name: user.businessName,
-      email: user.email,
       type: 'business',
-      salonId: user.salonId,
     };
 
-    // Store in cookie
-    const cookieStore = cookies();
+    const cookieStore = cookies(); // No need to `await` this – it's a sync getter
     cookieStore.set('user', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -45,4 +44,3 @@ export async function POST(req) {
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), { status: 500 });
   }
 }
-

@@ -49,9 +49,9 @@ export default function Dashboard() {
   const options = user?.type === 'business' ? businessOptions : customerOptions;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <Navbar />
-      <div className="max-w-3xl mx-auto mt-6 p-6 bg-white dark:bg-gray-800 shadow-xl rounded-3xl border border-purple-200 dark:border-purple-700">
+    <div className="min-h-screen pt-28 bg-gradient-to-b from-violet-100 via-purple-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <Navbar />
+    <div className="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-xl rounded-3xl border border-purple-200 dark:border-purple-700">  
         <h2 className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 text-center mb-6">
           Welcome, {user?.name}!
         </h2>

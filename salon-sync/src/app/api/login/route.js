@@ -33,7 +33,7 @@ export async function POST(req) {
       type: user.businessName ? 'business' : 'customer',
     };
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies(); // ✅ await added here
     cookieStore.set('user', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
