@@ -24,7 +24,7 @@ export async function POST(req) {
 
     // ✅ Match cookie structure used in /login route
     const userData = {
-      id: user.salonId,
+      salonId: user.salonId,
       name: user.businessName,
       type: 'business',
     };
