@@ -134,9 +134,17 @@ export default function SalonPage() {
                 </div>
                 <h3 className="text-xl font-semibold mt-3 text-gray-800 dark:text-white">{stylist.name}</h3>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">{stylist.bio || "No bio provided."}</p>
-                <Button className="mt-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white py-2 px-4 rounded-lg shadow-md">
-                  Book Appointment
-                </Button>
+                <Link
+                href={{
+                 pathname: '/book',
+                      query: { salonId: salonId, employeeId: stylist.employeeId },
+                       }}
+                    >
+                      <Button className="mt-4 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white py-2 px-4 rounded-lg shadow-md">
+                        Book Appointment
+                      </Button>
+                    </Link>
+
               </Card>
             ))}
           </div>

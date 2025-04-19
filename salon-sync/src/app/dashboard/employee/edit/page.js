@@ -113,6 +113,13 @@ export default function EditEmployeeProfilePage() {
           <Button onClick={handleSubmit} disabled={loading} className="w-full bg-fuchsia-600 text-white hover:bg-fuchsia-700">
             {loading ? <Loader2 className="animate-spin h-5 w-5" /> : 'Save Changes'}
           </Button>
+
+          <Button
+            className="mt-8 w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white"
+            onClick={() => router.push('/dashboard/employee')}
+          >
+            ⬅ Return to Dashboard
+          </Button>
         </div>
       </div>
     </div>

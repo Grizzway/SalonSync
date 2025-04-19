@@ -15,7 +15,7 @@ export async function GET(req) {
     const { db } = await connectToDatabase();
 
     // Use aggregation to join Payments with Customer and Employee collections
-    const payments = await db.collection('Payments').aggregate([
+    const payments = await db.collection('Payment').aggregate([
       { $match: { salonId: parseInt(salonId, 10) } }, // Match payments for the given salonId
       {
         $lookup: {

@@ -148,7 +148,7 @@ export default function Home() {
         {user && (
           <div className="mt-8">
             <Link
-              href="/dashboard"
+              href="/dashboard/customer"
               className="inline-block text-white bg-gradient-to-r from-fuchsia-500 to-purple-500 px-8 py-3 rounded-full text-md font-semibold shadow-lg hover:shadow-xl transition"
             >
               👤 My Account
