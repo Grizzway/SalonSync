@@ -120,6 +120,18 @@ export default function EmployeeDashboard() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">Update your bio, specialties, and profile picture.</p>
             <Button onClick={() => router.push('/dashboard/employee/edit')} className="w-full bg-fuchsia-600 text-white hover:bg-fuchsia-700">Edit Profile</Button>
           </div>
+          {/* Employee Schedule Button */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-purple-200 dark:border-purple-700">
+                <h2 className="text-2xl font-semibold text-purple-700 dark:text-purple-200 mb-2">📅 Your Schedule</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">See your work hours and shift details.</p>
+                <Button
+                    onClick={() => router.push('/dashboard/employee/schedule')}
+                    className="w-full bg-purple-600 text-white hover:bg-purple-700"
+                >
+                    View Your Schedule
+                </Button>
+                </div>
+
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-purple-200 dark:border-purple-700">
             <h2 className="text-2xl font-semibold text-purple-700 dark:text-purple-200 mb-2">🧰 Manage Services</h2>

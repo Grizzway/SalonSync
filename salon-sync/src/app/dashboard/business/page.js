@@ -133,6 +133,20 @@ export default function BusinessDashboard() {
               Manage Employees
             </Button>
           </div>
+          {/* Employee Schedule Button */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-purple-200 dark:border-purple-700">
+                <h2 className="text-xl font-semibold text-purple-700 dark:text-purple-300 mb-2">📆 Employee Schedule</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    View and manage all your employee schedules.
+                </p>
+                <Button
+                    onClick={() => router.push('/dashboard/business/schedule')}
+                    className="w-full bg-purple-600 text-white hover:bg-purple-700"
+                >
+                    View Schedule
+                </Button>
+                </div>
+
         </div>
       </div>
     </div>
