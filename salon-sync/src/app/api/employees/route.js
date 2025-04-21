@@ -39,7 +39,16 @@ export async function GET(req) {
       const { db } = await connectToDatabase();
       const employees = await db
         .collection('Employee')
-        .find({ salonId: salonIdNumber }) // Use the numeric salonId here
+        .find({ salonId: salonIdNumber })
+        .project({
+          _id: 1,
+          name: 1,
+          email: 1,
+          employeeCode: 1,
+          profilePicture: 1,
+          bio: 1,
+          createdAt: 1,
+        })
         .toArray();
       
       if (employees.length === 0) {
@@ -84,7 +93,7 @@ export async function DELETE(req) {
 // PUT endpoint to add an employee
 export async function PUT(req) {
   try {
-    const { salonId, salonName, name, email } = await req.json();
+    const { salonId, salonName: businessName, name, email } = await req.json();
 
     if (!salonId) {
       return new Response(
@@ -117,7 +126,7 @@ export async function PUT(req) {
       from: 'SalonSync <onboarding@grizzway.dev>',
       to: [email],
       subject: 'SalonSync Invitation',
-      html: `<p>Hello ${name}!<br>You were invited to <strong>${salonName}</strong>.<br><br>Your login code is: <strong>${employeeCode}</strong></p>`,
+      html: `<p>Hello ${name}!<br>You were invited to <strong>${businessName}</strong>.<br><br>Your login code is: <strong>${employeeCode}</strong></p>`,
     });
 
     if (error) {

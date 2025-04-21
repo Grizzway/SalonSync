@@ -37,18 +37,9 @@ export default function EmployeesPage() {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      fetchEmployees(user.id);
+    if (user?.salonId) {
+      fetchEmployees(user.salonId);
     }
-
-    const interval = setInterval(() => {
-      if (user?.id) {
-        fetchEmployees(user.id);
-        clearInterval(interval);
-      }
-    }, 500);
-
-    return () => clearInterval(interval);
   }, [user]);
 
   const handleSubmit = async () => {
