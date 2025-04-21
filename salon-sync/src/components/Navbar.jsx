@@ -12,8 +12,27 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
 
+  // Load dark mode preference on mount
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
+    const savedPreference = localStorage.getItem("darkMode");
+    if (savedPreference === "true") {
+      setDarkMode(true);
+      document.documentElement.classList.add("dark");
+    } else {
+      setDarkMode(false);
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  // Apply dark mode class and store preference when toggled
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("darkMode", "true");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("darkMode", "false");
+    }
   }, [darkMode]);
 
   const handleLogout = () => {
@@ -65,16 +84,32 @@ export default function Navbar() {
                     </button>
                   )}
 
-                  <button
-                    onClick={() =>
-                      user.type === "employee"
-                        ? handleNavigation("/dashboard/employee")
-                        : handleNavigation("/dashboard")
-                    }
-                    className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
-                  >
-                    Dashboard
-                  </button>
+                  {user.type === "business" && (
+                    <button
+                      onClick={() => handleNavigation("/dashboard/business")}
+                      className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
+                    >
+                      Business Dashboard
+                    </button>
+                  )}
+
+                  {user.type === "employee" && (
+                    <button
+                      onClick={() => handleNavigation("/dashboard/employee")}
+                      className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
+                    >
+                      Employee Dashboard
+                    </button>
+                  )}
+
+                  {user.type === "customer" && (
+                    <button
+                      onClick={() => handleNavigation("/dashboard/customer")}
+                      className="block w-full text-left px-5 py-3 hover:bg-purple-50 dark:hover:bg-gray-700 transition"
+                    >
+                      Customer Dashboard
+                    </button>
+                  )}
 
                   <button
                     onClick={() => handleNavigation("/")}

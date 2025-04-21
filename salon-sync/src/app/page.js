@@ -18,14 +18,19 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [salonList, setSalonList] = useState([]);
 
+  // ✅ Redirect only if they came from login or registration
   useEffect(() => {
+    const fromAuthPage = document.referrer.includes("/login") || document.referrer.includes("/register");
+    if (!fromAuthPage) return;
+
     if (user?.type === "employee") {
       router.push("/dashboard/employee");
     } else if (user?.type === "business") {
-      router.push("/dashboard");
+      router.push("/dashboard/business");
+    } else if (user?.type === "customer") {
+      router.push("/dashboard/customer");
     }
   }, [user, router]);
-  
 
   useEffect(() => {
     async function fetchTopSalons() {
@@ -137,18 +142,26 @@ export default function Home() {
             </Link>
           </p>
         )}
+
         {!user && (
-  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-    Employee?{' '}
-    <Link href="/login/employee" className="underline hover:text-fuchsia-600">
-      Sign in here.
-    </Link>
-  </p>
-)}
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Employee?{' '}
+            <Link href="/login/employee" className="underline hover:text-fuchsia-600">
+              Sign in here.
+            </Link>
+          </p>
+        )}
+
         {user && (
           <div className="mt-8">
             <Link
-              href="/dashboard/customer"
+              href={
+                user.type === "business"
+                  ? "/dashboard/business"
+                  : user.type === "employee"
+                  ? "/dashboard/employee"
+                  : "/dashboard/customer"
+              }
               className="inline-block text-white bg-gradient-to-r from-fuchsia-500 to-purple-500 px-8 py-3 rounded-full text-md font-semibold shadow-lg hover:shadow-xl transition"
             >
               👤 My Account
@@ -172,7 +185,6 @@ export default function Home() {
               viewport={{ once: true }}
               className="transition-transform transform hover:scale-105"
             >
-              
               <Link href={`/salons/${salon.salonId || salon._id}`} className="block h-full">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-2xl border border-gray-100 dark:border-rose-900 h-full flex flex-col justify-between">
                   <div className="w-full h-52 relative rounded-2xl overflow-hidden mb-4">

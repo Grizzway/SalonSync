@@ -2,9 +2,10 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import Navbar from '@/components/Navbar';
+import { Loader2 } from 'lucide-react';
 
 export default function CheckoutPage() {
   const searchParams = useSearchParams();
@@ -13,82 +14,79 @@ export default function CheckoutPage() {
 
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [paymentOption, setPaymentOption] = useState('half');
 
   useEffect(() => {
-    const fetchAppointment = async () => {
-      if (!appointmentId) return;
+    if (!appointmentId) return;
+
+    async function fetchAppointment() {
       const res = await fetch(`/api/appointments/view?appointmentId=${appointmentId}`);
       const data = await res.json();
-      setAppointment(data.appointment);
+      if (res.ok) setAppointment(data.appointment);
+      else alert(data.message || 'Failed to load appointment');
       setLoading(false);
-    };
+    }
+
     fetchAppointment();
   }, [appointmentId]);
 
   const handlePayment = async () => {
-    setSubmitting(true);
-    const res = await fetch('/api/payments/update', {
+    if (!appointmentId || !appointment) return;
+
+    const amount = paymentOption === 'half' ? appointment.price / 2 : appointment.price;
+
+    const res = await fetch('/api/payment/update', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         appointmentId,
-        amount: appointment.price,
-        paymentOption: 'Paid', // Assume full payment on checkout
+        paymentOption,
+        amount,
       }),
     });
 
-    const data = await res.json();
-    setSubmitting(false);
-
     if (res.ok) {
-      alert('Payment complete! 🎉');
-      router.push('/dashboard'); // You can adjust this as needed
+      alert('Payment processed successfully!');
+      router.push('/dashboard/customer');  
     } else {
-      alert(data.message || 'Payment failed');
+      const data = await res.json();
+      alert(data.message || 'Failed to process payment');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800">
-        <Navbar />
-        <Loader2 className="animate-spin h-10 w-10 text-purple-600" />
-      </div>
-    );
-  }
-
-  if (!appointment) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800 text-red-500">
-        <Navbar />
-        <p>Appointment not found.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pt-24 px-6 bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
       <Navbar />
-      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl border border-purple-300 dark:border-purple-700">
-        <h1 className="text-3xl font-bold text-center text-purple-700 dark:text-purple-300 mb-6">
-          Checkout
-        </h1>
+      <div className="max-w-xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl border border-purple-300 dark:border-purple-700">
+        <h1 className="text-3xl font-bold text-purple-700 dark:text-purple-300 mb-6 text-center">Checkout</h1>
 
-        <div className="space-y-4">
-          <p><strong>Service:</strong> {appointment.service}</p>
-          <p><strong>Date:</strong> {appointment.date}</p>
-          <p><strong>Time:</strong> {appointment.time}</p>
-          <p><strong>Amount Due:</strong> ${appointment.price}</p>
-        </div>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="animate-spin h-8 w-8 text-purple-600" />
+          </div>
+        ) : (
+          <>
+            <p className="mb-4 text-gray-700 dark:text-gray-300">
+              <strong>Service:</strong> {appointment.service}<br />
+              <strong>Date:</strong> {appointment.date}<br />
+              <strong>Time:</strong> {appointment.time}<br />
+              <strong>Total:</strong> ${appointment.price}
+            </p>
 
-        <Button
-          onClick={handlePayment}
-          disabled={submitting}
-          className="mt-8 w-full bg-green-600 text-white hover:bg-green-700"
-        >
-          {submitting ? <Loader2 className="animate-spin h-5 w-5" /> : 'Pay Now'}
-        </Button>
+            <select
+              value={paymentOption}
+              onChange={(e) => setPaymentOption(e.target.value)}
+              className="w-full p-2 mb-6 border rounded dark:bg-gray-700"
+            >
+              <option value="half">Pay Half Now</option>
+              <option value="full">Pay Full Now</option>
+            </select>
+
+            <Button onClick={handlePayment} className="w-full bg-purple-600 text-white hover:bg-purple-700">
+              Complete Payment
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

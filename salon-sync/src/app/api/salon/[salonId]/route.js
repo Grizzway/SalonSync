@@ -4,7 +4,8 @@ import cloudinary from '@/app/utils/cloudinary';
 import { Readable } from 'stream';
 
 export async function GET(req, context) {
-  const { salonId } = context.params;
+  const { params } = await context;
+  const salonId = params.salonId;
 
   try {
     const { db } = await connectToDatabase();

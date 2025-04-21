@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,33 @@ export default function BusinessRegisterPage() {
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState("");
+
+  const [businessHours, setBusinessHours] = useState({
+    monday: { open: '', close: '' },
+    tuesday: { open: '', close: '' },
+    wednesday: { open: '', close: '' },
+    thursday: { open: '', close: '' },
+    friday: { open: '', close: '' },
+    saturday: { open: '', close: '' },
+    sunday: { open: '', close: '' },
+  });
+
+  const timeOptions = Array.from({ length: 24 }, (_, i) => {
+    const hour = i % 12 === 0 ? 12 : i % 12;
+    const suffix = i < 12 ? "AM" : "PM";
+    return `${hour.toString().padStart(2, "0")}:00 ${suffix}`;
+  });
+
+  const handleTimeChange = (day, field, value) => {
+    setBusinessHours(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value === 'closed' ? null : value
+      }
+    }));
+  };
+
   const router = useRouter();
 
   const handleSubmit = async (e) => {
@@ -35,7 +62,13 @@ export default function BusinessRegisterPage() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ businessName, email, password, address }),
+      body: JSON.stringify({
+        businessName,
+        email,
+        password,
+        address,
+        businessHours,
+      }),
     });
 
     const data = await response.json();
@@ -60,57 +93,87 @@ export default function BusinessRegisterPage() {
           </h1>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="businessName" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
                 Business Name
               </label>
               <input
                 type="text"
-                id="businessName"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
                 Email
               </label>
               <input
                 type="email"
-                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
                 Password
               </label>
               <input
                 type="password"
-                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
             <div>
-              <label htmlFor="address" className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
                 Business Address
               </label>
               <input
                 type="text"
-                id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-2 focus:ring-purple-400 dark:bg-gray-700 dark:text-white"
                 required
               />
             </div>
+
+            {/* Business Hours Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-purple-700 dark:text-purple-300">Business Hours</h3>
+              {Object.entries(businessHours).map(([day, times]) => (
+                <div key={day} className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <span className="capitalize w-24 text-gray-700 dark:text-gray-300">{day}</span>
+                  <select
+                    value={times.open === null ? 'closed' : times.open || ''}
+                    onChange={(e) => handleTimeChange(day, 'open', e.target.value)}
+                    className="w-full md:w-40 p-2 border border-gray-300 rounded"
+                  >
+                    <option value="">Open</option>
+                    <option value="closed">Closed</option>
+                    {timeOptions.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-600 dark:text-gray-400 hidden md:inline">to</span>
+                  <select
+                    value={times.close === null ? 'closed' : times.close || ''}
+                    onChange={(e) => handleTimeChange(day, 'close', e.target.value)}
+                    className="w-full md:w-40 p-2 border border-gray-300 rounded"
+                  >
+                    <option value="">Close</option>
+                    <option value="closed">Closed</option>
+                    {timeOptions.map(time => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-600 hover:to-fuchsia-600 text-white font-medium py-3 rounded-lg transition-all duration-300 shadow-md dark:shadow-fuchsia-900"
@@ -124,4 +187,3 @@ export default function BusinessRegisterPage() {
     </div>
   );
 }
-

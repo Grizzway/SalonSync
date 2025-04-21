@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import SurveyModal from '@/components/SurveyModal';
+
 export default function BookingPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -28,12 +30,18 @@ export default function BookingPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
 
   // Autofill from user and query params
   useEffect(() => {
     if (user?.type === 'customer') {
       setName(user.name || '');
       setEmail(user.email || '');
+
+      // Check if survey was completed (assuming context has full user doc)
+      if (!user.surveyCompleted) {
+        setShowSurveyModal(true);
+      }
     }
     if (preselectedSalonId) setSalonId(preselectedSalonId);
     if (preselectedEmployeeId) setEmployeeId(preselectedEmployeeId);
@@ -66,6 +74,12 @@ export default function BookingPage() {
   }, [employeeId]);
 
   const handleBooking = async () => {
+    if (user?.type === 'customer' && !user.surveyCompleted) {
+      alert('Please complete the customer survey before booking.');
+      setShowSurveyModal(true);
+      return;
+    }
+
     const payload = {
       customerId: user?.id || null,
       salonId,
@@ -78,27 +92,25 @@ export default function BookingPage() {
       time,
       paymentOption,
     };
-  
+
     const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-  
+
     const data = await res.json();
-  
+
     if (res.ok) {
-      // Send them to the confirmation screen first
       router.push(`/confirm?appointmentId=${data.appointmentId}`);
     } else {
       alert(data.message || 'Failed to book appointment');
     }
   };
-  
 
   return (
     <div className="min-h-screen pt-24 px-6 bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
-     <Navbar />
+      <Navbar />
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl border border-purple-300 dark:border-purple-700">
         <h1 className="text-3xl font-bold text-purple-700 dark:text-purple-300 mb-6 text-center">
           Book an Appointment
@@ -158,7 +170,17 @@ export default function BookingPage() {
           </div>
         )}
       </div>
+
+      {showSurveyModal && user?.type === 'customer' && (
+        <SurveyModal
+          open={showSurveyModal}
+          onClose={() => setShowSurveyModal(false)}
+          customerId={user.id}
+          onSurveyComplete={() => setShowSurveyModal(false)}
+        />
+      )}
     </div>
   );
 }
+
 

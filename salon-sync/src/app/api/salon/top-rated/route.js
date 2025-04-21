@@ -16,13 +16,15 @@ export async function GET() {
       { $sort: { avgRating: -1 } }
     ]).toArray();
 
-    // Extract salon IDs as strings
-    const salonIds = ratingAggregation.map(salon => parseInt(salon._id));  // Convert back to number
+    // Extract salon IDs as numbers
+    const salonIds = ratingAggregation.map(salon => parseInt(salon._id));
 
-    // Fetch business details using salonId
-    const businesses = await db.collection("Business").find({ 
-      salonId: { $in: salonIds } 
-    }).toArray();
+    // Fetch business details using salonId with projection and limit
+    const businesses = await db.collection("Business")
+      .find({ salonId: { $in: salonIds } })
+      .project({ salonId: 1, businessName: 1, address: 1, logo: 1 })
+      .limit(10)
+      .toArray();
 
     // Merge ratings with business details
     const allSalons = businesses.map(business => {
@@ -34,14 +36,15 @@ export async function GET() {
         rating: ratingData?.avgRating || 0,
         reviewCount: ratingData?.reviewCount || 0,
         imageUrl: business.logo || "https://res.cloudinary.com/dxftncwhj/image/upload/v1744217062/placeholder_skpuau.png"
-
       };
-      
     });
 
     return new Response(JSON.stringify({ salons: allSalons }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "s-maxage=60, stale-while-revalidate"
+      }
     });
   } catch (error) {
     console.error("Error fetching salons:", error);

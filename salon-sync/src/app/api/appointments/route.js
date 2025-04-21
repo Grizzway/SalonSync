@@ -23,10 +23,11 @@ export async function POST(req) {
     }
 
     const { db } = await connectToDatabase();
+    const numericEmployeeId = Number(employeeId); // ✅ ensure it's stored as a number
 
     // 1. Prevent double booking
-    const conflict = await db.collection('Appointments').findOne({
-      employeeId,
+    const conflict = await db.collection('Appointment').findOne({
+      employeeId: numericEmployeeId,
       date,
       time,
     });
@@ -57,7 +58,7 @@ export async function POST(req) {
     }
 
     // 3. Get service details from employee
-    const emp = await db.collection('Employee').findOne({ employeeId });
+    const emp = await db.collection('Employee').findOne({ employeeId: numericEmployeeId });
     const matchedService = emp?.services?.find((s) => s.name === service);
     const duration = matchedService?.duration || 60;
     const price = matchedService?.price || 100;
@@ -66,7 +67,7 @@ export async function POST(req) {
     const appointment = {
       customerId: finalCustomerId,
       salonId,
-      employeeId,
+      employeeId: numericEmployeeId, // ✅ ensure consistency
       service,
       date,
       time,
@@ -77,14 +78,13 @@ export async function POST(req) {
     };
 
     const result = await db.collection('Appointment').insertOne(appointment);
-return new Response(JSON.stringify({ appointmentId: result.insertedId }), { status: 201 });
-
 
     // 5. Log payment
     await db.collection('Payment').insertOne({
+      appointmentId: result.insertedId,
       customerId: finalCustomerId,
       salonId,
-      employeeId,
+      employeeId: numericEmployeeId,
       cost: paymentOption === 'half' ? price / 2 : price,
       paymentMethod: 'Credit (Fake)',
       paid: paymentOption,
@@ -108,9 +108,11 @@ return new Response(JSON.stringify({ appointmentId: result.insertedId }), { stat
       `,
     });
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ appointmentId: result.insertedId }), { status: 201 });
+
   } catch (err) {
     console.error('Booking error:', err);
     return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
   }
 }
+

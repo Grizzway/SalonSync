@@ -23,6 +23,8 @@ export default function EmployeeDashboard() {
   const [appointments, setAppointments] = useState([]);
   const [view, setView] = useState('week');
   const [date, setDate] = useState(new Date());
+  const [minTime, setMinTime] = useState(new Date(0, 0, 0, 8));
+  const [maxTime, setMaxTime] = useState(new Date(0, 0, 0, 20));
 
   useEffect(() => {
     if (!user || user.type !== 'employee') {
@@ -44,19 +46,45 @@ export default function EmployeeDashboard() {
           });
           setAppointments(formatted);
         });
+
+      if (user.salonIds?.[0]) {
+        fetch(`/api/modifyPage?salonId=${user.salonIds[0]}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.businessHours) {
+              const hours = Object.values(data.businessHours)
+                .filter(h => h.open && h.close)
+                .map(h => [parseTime(h.open), parseTime(h.close)]);
+              if (hours.length > 0) {
+                const opens = hours.map(([open]) => open);
+                const closes = hours.map(([_, close]) => close);
+                setMinTime(new Date(0, 0, 0, Math.min(...opens)));
+                setMaxTime(new Date(0, 0, 0, Math.max(...closes)));
+              }
+            }
+          });
+      }
     }
   }, [user]);
 
+  const parseTime = (str) => {
+    if (!str || typeof str !== 'string') return 0;
+    const [time, modifier] = str.split(' ');
+    let [hours] = time.split(':').map(Number);
+    if (modifier === 'PM' && hours !== 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+    return hours;
+  };
+
   return (
     <div className="min-h-screen pt-24 px-6 bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
-     <Navbar />
+      <Navbar />
 
       <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-extrabold text-center text-purple-700 dark:text-fuchsia-300 mb-10">
           Welcome, {user?.name?.split(' ')[0] || 'Stylist'}!
         </h1>
 
-        {/* Calendar */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-purple-300 dark:border-purple-700 mb-10">
           <h2 className="text-2xl font-semibold mb-4 text-purple-700 dark:text-purple-200">
             📅 Weekly Calendar
@@ -74,11 +102,12 @@ export default function EmployeeDashboard() {
               onNavigate={(newDate) => setDate(newDate)}
               style={{ height: '100%', color: '#1e1e1e' }}
               toolbar={true}
+              min={minTime}
+              max={maxTime}
             />
           </div>
         </div>
 
-        {/* Dashboard Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-purple-200 dark:border-purple-700">
             <h2 className="text-2xl font-semibold text-purple-700 dark:text-purple-200 mb-2">🏠 Your Salon</h2>
