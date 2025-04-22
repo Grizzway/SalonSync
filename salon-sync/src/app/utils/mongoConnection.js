@@ -1,17 +1,30 @@
-// utils/mongoConnection.js
-
 import { MongoClient } from 'mongodb';
-const client = new MongoClient(process.env.MONGODB_URI);
+
+const uri = process.env.MONGODB_URI;
 const dbName = 'SalonSync';
 
+let cachedClient = null;
+let cachedDb = null;
+
 export async function connectToDatabase() {
-  if (typeof window !== 'undefined') {
-    // If we're on the client-side, prevent the MongoDB connection from being used
-    return null;
+  if (typeof window !== 'undefined') return null;
+
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
   }
-  
-  // Connect to the database server-side only
+
+  // Only create a new client if one doesn't exist
+  const client = new MongoClient(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+
   await client.connect();
+
   const db = client.db(dbName);
-  return { db, client };
+
+  cachedClient = client;
+  cachedDb = db;
+
+  return { client, db };
 }
