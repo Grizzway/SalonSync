@@ -12,23 +12,22 @@ export async function POST(req) {
 
     const { db } = await connectToDatabase();
 
-    const result = await db.collection('Customer').updateOne(
-      { customerId: parseInt(customerId) },
-      {
-        $set: {
-          survey: responses,
-          hasSurvey: true,
-        }
-      }
-    );
-
-    if (result.matchedCount === 0) {
+    // Optional: check if the customer exists before creating a survey
+    const customer = await db.collection('Customer').findOne({ customerId: parseInt(customerId) });
+    if (!customer) {
       return new Response(JSON.stringify({ error: 'Customer not found' }), { status: 404 });
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    // Insert into CustomerSurvey collection
+    const result = await db.collection('CustomerSurvey').insertOne({
+      customerId: parseInt(customerId),
+      responses,
+      createdAt: new Date(),
+    });
+
+    return new Response(JSON.stringify({ success: true, surveyId: result.insertedId }), { status: 201 });
   } catch (err) {
-    console.error('Survey save error:', err);
+    console.error('Survey submission error:', err);
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 }

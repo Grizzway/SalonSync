@@ -1,5 +1,4 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
-import { ObjectId } from 'mongodb';
 
 export async function PATCH(req) {
   try {
@@ -14,9 +13,9 @@ export async function PATCH(req) {
 
     const { db } = await connectToDatabase();
 
-    // Try to update an existing payment
+    // Try to update existing payment by appointmentId (manual ID now)
     const updated = await db.collection('Payment').updateOne(
-      { appointmentId: new ObjectId(appointmentId) },
+      { appointmentId: Number(appointmentId) },
       {
         $set: {
           paid: paymentOption,
@@ -30,7 +29,7 @@ export async function PATCH(req) {
     // If no existing payment found, insert a new one
     if (updated.matchedCount === 0) {
       await db.collection('Payment').insertOne({
-        appointmentId: new ObjectId(appointmentId),
+        appointmentId: Number(appointmentId),
         cost: amount,
         paid: paymentOption,
         paymentMethod: 'Credit (Fake)',

@@ -2,10 +2,10 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import cloudinary from '@/app/utils/cloudinary';
 import { Readable } from 'stream';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req, context) {
-  const { params } = await context;
-  const salonId = params.salonId;
+  const { salonId } = await context.params
 
   try {
     const { db } = await connectToDatabase();

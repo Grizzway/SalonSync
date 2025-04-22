@@ -1,5 +1,4 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
-import { ObjectId } from 'mongodb';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -10,7 +9,7 @@ export async function GET(req) {
   }
 
   const { db } = await connectToDatabase();
-  const appointment = await db.collection('Appointment').findOne({ _id: new ObjectId(id) });
+  const appointment = await db.collection('Appointment').findOne({ appointmentId: Number(id) });
 
   if (!appointment) {
     return new Response(JSON.stringify({ message: 'Appointment not found' }), { status: 404 });

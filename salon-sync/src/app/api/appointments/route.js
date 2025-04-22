@@ -25,7 +25,7 @@ export async function POST(req) {
     const { db } = await connectToDatabase();
     const numericEmployeeId = Number(employeeId); // ✅ ensure it's stored as a number
 
-    // 1. Prevent double booking
+    // Prevent double booking
     const conflict = await db.collection('Appointment').findOne({
       employeeId: numericEmployeeId,
       date,
@@ -36,7 +36,7 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Time slot already booked' }), { status: 409 });
     }
 
-    // 2. Create customer if guest
+    // Create customer if guest
     let finalCustomerId = customerId;
     if (!customerId) {
       const existing = await db.collection('Customer').findOne({ email });
@@ -56,18 +56,32 @@ export async function POST(req) {
         });
       }
     }
+    const customer = await db.collection('Customer').findOne({ customerId: finalCustomerId });
+    const customerName = customer?.name || 'A customer';
 
-    // 3. Get service details from employee
+    // Get service details from employee
     const emp = await db.collection('Employee').findOne({ employeeId: numericEmployeeId });
     const matchedService = emp?.services?.find((s) => s.name === service);
     const duration = matchedService?.duration || 60;
     const price = matchedService?.price || 100;
 
-    // 4. Save appointment
+    // Save appointment
+    const lastAppointment = await db.collection('Appointment')
+      .find()
+      .sort({ appointmentId: -1 })
+      .limit(1)
+      .toArray();
+
+    const nextAppointmentId = lastAppointment.length > 0
+      ? lastAppointment[0].appointmentId + 1
+      : 1000;
+
+
     const appointment = {
+      appointmentId: nextAppointmentId,
       customerId: finalCustomerId,
       salonId,
-      employeeId: numericEmployeeId, // ✅ ensure consistency
+      employeeId: parseInt(numericEmployeeId),
       service,
       date,
       time,
@@ -79,7 +93,7 @@ export async function POST(req) {
 
     const result = await db.collection('Appointment').insertOne(appointment);
 
-    // 5. Log payment
+    // Log payment
     await db.collection('Payment').insertOne({
       appointmentId: result.insertedId,
       customerId: finalCustomerId,
@@ -91,7 +105,7 @@ export async function POST(req) {
       createdAt: new Date(),
     });
 
-    // 6. Send email
+    // Send email
     await resend.emails.send({
       from: 'SalonSync <booking@grizzway.dev>',
       to: [email],
@@ -107,8 +121,27 @@ export async function POST(req) {
         <p>Thank you for booking with SalonSync 💜</p>
       `,
     });
+    
+    // Notify the employee
+    if (emp?.email) {
+      await resend.emails.send({
+        from: 'SalonSync <booking@grizzway.dev>',
+        to: [emp.email],
+        subject: `New Appointment Booked: ${service} on ${date}`,
+        html: `
+          <h2>You've Been Booked 🎉</h2>
+          <p><strong>Service:</strong> ${service}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
+          <p><strong>Customer Name:</strong> ${customerName}</p>
+          <p><strong>Customer Email:</strong> ${email}</p>
+          <br>
+          <p>Log in to your dashboard for more details.</p>
+        `,
+      });
+    }
 
-    return new Response(JSON.stringify({ appointmentId: result.insertedId }), { status: 201 });
+    return new Response(JSON.stringify({ appointmentId: nextAppointmentId }), { status: 201 });
 
   } catch (err) {
     console.error('Booking error:', err);

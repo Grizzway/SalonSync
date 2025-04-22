@@ -2,7 +2,7 @@ import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 // Handle GET request to fetch reviews
 export async function GET(req, context) {
-  const { salonId } = context.params; // Access params directly
+  const { salonId } = await context.params; // Access params directly
 
   if (!salonId) {
     return new Response(JSON.stringify({ error: 'Salon ID is missing' }), { status: 400 });

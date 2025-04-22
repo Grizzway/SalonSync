@@ -47,7 +47,7 @@ export async function POST(req) {
     };
 
     // Set cookie for session
-    const cookieStore = require('next/headers').cookies();
+    const cookieStore = await require('next/headers').cookies();
     cookieStore.set('user', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
