@@ -1,6 +1,7 @@
+// ✅ FIXED FILE: src/app/api/employees/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { Resend } from 'resend';
-import { ObjectId } from 'mongodb'; // Import ObjectId from MongoDB
+import { ObjectId } from 'mongodb';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -13,63 +14,58 @@ function generateEmployeeCode() {
   return code;
 }
 
-// Function to generate a custom employee ID starting at 1000
 async function generateEmployeeId(db) {
   const lastEmployee = await db.collection('Employee').find().sort({ employeeId: -1 }).limit(1).toArray();
   const nextId = lastEmployee.length > 0 ? lastEmployee[0].employeeId + 1 : 1000;
   return nextId;
 }
 
-// GET endpoint to fetch employees
 export async function GET(req) {
-    const { searchParams } = new URL(req.url);
-    const salonId = searchParams.get('salonId');
-  
-    if (!salonId) {
-      return new Response(
-        JSON.stringify({ error: 'Salon ID is missing' }),
-        { status: 400 }
-      );
-    }
-  
-    // Ensure salonId is treated as a number for comparison in MongoDB
-    const salonIdNumber = Number(salonId); // Convert salonId to number
-  
-    try {
-      const { db } = await connectToDatabase();
-      const employees = await db
-        .collection('Employee')
-        .find({ salonId: salonIdNumber })
-        .project({
-          _id: 1,
-          name: 1,
-          email: 1,
-          employeeCode: 1,
-          profilePicture: 1,
-          bio: 1,
-          createdAt: 1,
-        })
-        .toArray();
-      
-      if (employees.length === 0) {
-        console.log('No employees found for salonId:', salonIdNumber);
-      }
-  
-      return new Response(JSON.stringify({ employees }), { status: 200 });
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch employees' }),
-        { status: 500 }
-      );
-    }
+  const { searchParams } = new URL(req.url);
+  const salonId = searchParams.get('salonId');
+
+  if (!salonId) {
+    return new Response(
+      JSON.stringify({ error: 'Salon ID is missing' }),
+      { status: 400 }
+    );
   }
 
-// DELETE endpoint to delete an employee
+  const salonIdNumber = Number(salonId);
+
+  try {
+    const { db } = await connectToDatabase();
+    const employees = await db
+      .collection('Employee')
+      .find({ $or: [
+        { salonId: salonIdNumber },
+        { salonIds: { $in: [salonIdNumber] } }
+      ]})
+      .project({
+        _id: 0,
+        name: 1,
+        employeeId: 1,
+        email: 1,
+        profilePicture: 1,
+        bio: 1,
+        createdAt: 1
+      })
+      .toArray();
+
+    return new Response(JSON.stringify({ employees }), { status: 200 });
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch employees' }),
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req) {
   try {
     const { employeeId } = await req.json();
-  
+
     if (!employeeId) {
       return new Response(JSON.stringify({ message: 'Employee ID is required.' }), { status: 400 });
     }
@@ -90,7 +86,6 @@ export async function DELETE(req) {
   }
 }
 
-// PUT endpoint to add an employee
 export async function PUT(req) {
   try {
     const { salonId, salonName: businessName, name, email } = await req.json();
@@ -104,29 +99,26 @@ export async function PUT(req) {
 
     const { db } = await connectToDatabase();
 
-    // Generate the custom employee ID starting at 1000
     const employeeId = await generateEmployeeId(db);
-
     const employeeCode = generateEmployeeCode();
 
-    // Insert new employee with custom employeeId and other details
     await db.collection('Employee').insertOne({
-      salonId,
+      salonId: Number(salonId),
+      salonIds: [Number(salonId)],
       name,
       email,
       employeeCode,
-      employeeId, // Add custom employee ID
+      employeeId,
       profilePicture: null,
       bio: null,
-      createdAt: new Date(), // Add creation date
+      createdAt: new Date(),
     });
 
-    // Send the invitation email
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: 'SalonSync <onboarding@grizzway.dev>',
       to: [email],
       subject: 'SalonSync Invitation',
-      html: `<p>Hello ${name}!<br>You were invited to <strong>${businessName}</strong>.<br><br>Your login code is: <strong>${employeeCode}</strong></p>`,
+      html: `<p>Hello ${name}!<br>You were invited to <strong>${businessName}</strong>.<br><br>Your login code is: <strong>${employeeCode}</strong></p>`
     });
 
     if (error) {
@@ -137,7 +129,14 @@ export async function PUT(req) {
       );
     }
 
-    const employees = await db.collection('Employee').find({ salonId }).toArray();
+    const employees = await db.collection('Employee')
+      .find({ $or: [
+        { salonId: Number(salonId) },
+        { salonIds: { $in: [Number(salonId)] } }
+      ] })
+      .project({ _id: 0, name: 1, employeeId: 1 })
+      .toArray();
+
     return new Response(JSON.stringify({ employees }), { status: 200 });
 
   } catch (error) {

@@ -5,18 +5,14 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import SurveyModal from '@/components/SurveyModal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function BookingPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const preselectedSalonId = searchParams.get('salonId');
-  const preselectedEmployeeId = searchParams.get('employeeId');
 
   const [salonId, setSalonId] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -24,111 +20,104 @@ export default function BookingPage() {
   const [services, setServices] = useState([]);
   const [selectedService, setSelectedService] = useState('');
   const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [bookedTimes, setBookedTimes] = useState([]);
   const [paymentOption, setPaymentOption] = useState('half');
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [surveyChecked, setSurveyChecked] = useState(false);
-  const [showSurveyNotice, setShowSurveyNotice] = useState(false);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [surveyIntroComplete, setSurveyIntroComplete] = useState(false);
-  
+  const [showSurveyNotice, setShowSurveyNotice] = useState(false);
+
   useEffect(() => {
-    const checkSurveyStatus = async () => {
-      if (!user?.id || user.type !== 'customer') return;
-  
-      try {
-        const res = await fetch(`/api/customer/survey/check?customerId=${user.id}`);
-        const data = await res.json();
-        if (!data.completed) {
-          setShowSurveyNotice(true);
-  
-          // Fade out notice, then show modal
-          setTimeout(() => {
-            setShowSurveyNotice(false);
-            setSurveyIntroComplete(true);
-          }, 4000);
-        }
-      } catch (error) {
-        console.error('Error checking survey status:', error);
-      } finally {
-        setSurveyChecked(true);
-      }
-    };
-  
-    checkSurveyStatus();
+    const salon = searchParams.get('salonId');
+    const employee = searchParams.get('employeeId');
+    if (salon) setSalonId(salon);
+    if (employee) setEmployeeId(employee);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (user?.id && user.type === 'customer') {
+      fetch(`/api/customer/profile?customerId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setName(data.name || '');
+          setEmail(data.email || '');
+        })
+        .catch(() => {});
+    }
   }, [user]);
-  
-  // Show SurveyModal after delay
+
+  useEffect(() => {
+    if (user?.id && user.type === 'customer') {
+      fetch(`/api/customer/survey/check?customerId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.completed) {
+            setShowSurveyNotice(true);
+            setTimeout(() => {
+              setShowSurveyNotice(false);
+              setSurveyIntroComplete(true);
+            }, 2000);
+          }
+        })
+        .catch(() => {
+          setSurveyIntroComplete(true);
+        })
+        .finally(() => setSurveyChecked(true));
+    } else {
+      setSurveyChecked(true);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (surveyIntroComplete) {
-      const timer = setTimeout(() => {
-        setShowSurveyModal(true);
-      }, 500); // small fade-out buffer
+      const timer = setTimeout(() => setShowSurveyModal(true), 500);
       return () => clearTimeout(timer);
     }
   }, [surveyIntroComplete]);
 
   useEffect(() => {
-    const fetchCustomerProfile = async () => {
-      if (!user?.id || user.type !== 'customer') return;
-  
-      try {
-        const res = await fetch(`/api/customer/profile?customerId=${user.id}`);
-        const data = await res.json();
-        if (res.ok) {
-          setName(data.name || '');
-          setEmail(data.email || '');
-        }
-      } catch (err) {
-        console.error('Failed to fetch customer profile:', err);
-      }
-    };
-  
-    fetchCustomerProfile();
-  }, [user]);
-
+    if (!employeeId) return;
+    Promise.all([
+      fetch(`/api/employee/services?employeeId=${employeeId}`),
+      fetch(`/api/employee/profile?employeeId=${employeeId}`)
+    ]).then(async ([res1, res2]) => {
+      const servicesData = await res1.json().catch(() => ({}));
+      const profileData = await res2.json().catch(() => ({}));
+      setServices(servicesData.services || []);
+      setEmployeeName(profileData.name || '');
+    }).catch(() => {});
+  }, [employeeId]);
 
   useEffect(() => {
-    const salon = searchParams.get('salonId');
-    const employee = searchParams.get('employeeId');
-  
-    if (salon) setSalonId(salon);
-    if (employee) setEmployeeId(employee);
-  
-    if (salon && employee) {
-      const fetchServices = async () => {
-        setLoading(true);
-        try {
-          // Fetch services for employee directly
-          const res = await fetch(`/api/employee/services?employeeId=${employee}`);
-          const data = await res.json();
-          setServices(data.services || []);
-  
-            // Fetch employee profile to get name
-          const empRes = await fetch(`/api/employee/profile?employeeId=${employee}`);
-          const empData = await empRes.json();
-          setEmployeeName(empData.name || '');
-        } catch (err) {
-          console.error('Error loading services or employee name:', err);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      fetchServices();
+    if (!employeeId || !date) return;
+    fetch(`/api/appointments/employee?employeeId=${employeeId}`)
+      .then(res => res.json())
+      .then(data => {
+        const booked = (data.appointments || [])
+          .filter(a => a.date === date)
+          .map(a => a.time);
+        setBookedTimes(booked);
+      })
+      .catch(() => {
+        setBookedTimes([]);
+      });
+  }, [employeeId, date]);
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let h = 9; h < 17; h++) {
+      slots.push(`${h.toString().padStart(2, '0')}:00`);
+      slots.push(`${h.toString().padStart(2, '0')}:30`);
     }
-  }, [searchParams]);
+    return slots.filter(t => !bookedTimes.includes(t));
+  };
 
   const handleBooking = async () => {
-    if (user?.type === 'customer' && showSurveyModal) {
-      alert('Please complete the customer survey before booking.');
-      return;
-    }
-
+    if (showSurveyModal) return alert('Please complete the customer survey first.');
     const payload = {
       customerId: user?.id || null,
       salonId,
@@ -138,23 +127,17 @@ export default function BookingPage() {
       email,
       phone,
       date,
-      time,
+      time: selectedTime,
       paymentOption,
     };
-
     const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-
     const data = await res.json();
-
-    if (res.ok) {
-      router.push(`/confirm?appointmentId=${data.appointmentId}`);
-    } else {
-      alert(data.message || 'Failed to book appointment');
-    }
+    if (res.ok) router.push(`/confirm?appointmentId=${data.appointmentId}`);
+    else alert(data.message || 'Booking failed');
   };
 
   return (
@@ -165,39 +148,30 @@ export default function BookingPage() {
           Book an Appointment {employeeName ? `with ${employeeName}` : ''}
         </h1>
 
-        {loading || !surveyChecked ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="animate-spin h-8 w-8 text-purple-600" />
-          </div>
+        {!surveyChecked ? (
+          <p className="text-center">Loading...</p>
         ) : (
           <div className="space-y-4">
             <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
             <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <Input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
 
-            <select
-              value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
-              className="w-full p-2 border rounded dark:bg-gray-700"
-            >
+            <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)} className="w-full p-2 border rounded dark:bg-gray-700">
               <option value="">Select a service</option>
-              {services
-                .filter((s) => s.name && s.duration && s.price)
-                .map((s, idx) => (
-                <option key={idx} value={s.name}>
-                  {s.name} — {s.duration} min — ${s.price}
-                </option>
+              {services.map((s, idx) => (
+                <option key={idx} value={s.name}>{s.name} — {s.duration} min — ${s.price}</option>
               ))}
             </select>
 
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
 
-            <select
-              value={paymentOption}
-              onChange={(e) => setPaymentOption(e.target.value)}
-              className="w-full p-2 border rounded dark:bg-gray-700"
-            >
+            <div className="grid grid-cols-4 gap-2">
+              {generateTimeSlots().map((slot, i) => (
+                <Button key={i} variant={selectedTime === slot ? 'default' : 'outline'} onClick={() => setSelectedTime(slot)}>{slot}</Button>
+              ))}
+            </div>
+
+            <select value={paymentOption} onChange={(e) => setPaymentOption(e.target.value)} className="w-full p-2 border rounded dark:bg-gray-700">
               <option value="half">Pay Half Now</option>
               <option value="full">Pay Full Now</option>
             </select>
@@ -209,31 +183,33 @@ export default function BookingPage() {
         )}
       </div>
 
-{/* ShadCN Dialog Notice (fades in and disappears) */}
-<Dialog open={showSurveyNotice}>
-  <DialogContent className="animate-fade-in text-center">
-    <DialogHeader>
-      <DialogTitle className="text-lg font-semibold text-red-600">
-        We noticed you haven't done your customer information survey.
-      </DialogTitle>
-      <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-        This must be done before booking.
-      </p>
-    </DialogHeader>
-  </DialogContent>
-</Dialog>
+      <Dialog open={showSurveyNotice}>
+        <DialogContent className="animate-fade-in text-center">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-red-600">
+              We noticed you haven't done your customer information survey.
+            </DialogTitle>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+              This must be done before booking.
+            </p>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
-{/* Show SurveyModal only AFTER intro is fully complete */}
-{surveyIntroComplete && showSurveyModal && user?.type === 'customer' && (
-  <div className="animate-fade-in">
-    <SurveyModal
-      open={true}
-      onClose={() => setShowSurveyModal(false)}
-      customerId={user.id}
-      onSurveyComplete={() => setShowSurveyModal(false)}
-    />
-  </div>
-)}
+      {surveyIntroComplete && showSurveyModal && user?.type === 'customer' && (
+        <div className="animate-fade-in">
+          <SurveyModal
+            open={true}
+            onClose={() => setShowSurveyModal(false)}
+            customerId={user.id}
+            onSurveyComplete={() => setShowSurveyModal(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
+
+
+
+

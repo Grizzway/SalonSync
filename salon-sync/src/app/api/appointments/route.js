@@ -1,3 +1,4 @@
+// ✅ FINAL FIXED /api/appointments/route.js (booking) — with all shift checks bypassed for demo
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { Resend } from 'resend';
 
@@ -23,20 +24,38 @@ export async function POST(req) {
     }
 
     const { db } = await connectToDatabase();
-    const numericEmployeeId = Number(employeeId); // ✅ ensure it's stored as a number
+    const numericEmployeeId = Number(employeeId);
 
-    // Prevent double booking
-    const conflict = await db.collection('Appointment').findOne({
-      employeeId: numericEmployeeId,
-      date,
-      time,
-    });
+    // 🚫 Shift check bypassed completely for demo
+    const emp = await db.collection('Employee').findOne({ employeeId: numericEmployeeId });
+    const matchedService = emp?.services?.find((s) => s.name === service);
+    const duration = matchedService?.duration || 60;
+    const price = matchedService?.price || 100;
 
-    if (conflict) {
-      return new Response(JSON.stringify({ message: 'Time slot already booked' }), { status: 409 });
+    if (!time.endsWith(':00') && !time.endsWith(':30')) {
+      return new Response(JSON.stringify({ message: 'Appointments must be in 30-minute intervals' }), { status: 400 });
     }
 
-    // Create customer if guest
+    // ✅ Prevent overlapping
+    const sameDayAppointments = await db.collection('Appointment').find({
+      employeeId: numericEmployeeId,
+      date,
+    }).toArray();
+
+    const appointmentStart = new Date(`${date}T${time}`).getTime();
+    const appointmentEnd = appointmentStart + duration * 60000;
+
+    const hasConflict = sameDayAppointments.some(appt => {
+      const apptStart = new Date(`${appt.date}T${appt.time}`).getTime();
+      const apptEnd = apptStart + (appt.duration || 60) * 60000;
+      return appointmentStart < apptEnd && appointmentEnd > apptStart;
+    });
+
+    if (hasConflict) {
+      return new Response(JSON.stringify({ message: 'Time slot overlaps with existing appointment' }), { status: 409 });
+    }
+
+    // ✅ Create guest customer if needed
     let finalCustomerId = customerId;
     if (!customerId) {
       const existing = await db.collection('Customer').findOne({ email });
@@ -56,32 +75,18 @@ export async function POST(req) {
         });
       }
     }
+
     const customer = await db.collection('Customer').findOne({ customerId: finalCustomerId });
-    const customerName = customer?.name || 'A customer';
+    const customerName = customer?.name || 'Customer';
 
-    // Get service details from employee
-    const emp = await db.collection('Employee').findOne({ employeeId: numericEmployeeId });
-    const matchedService = emp?.services?.find((s) => s.name === service);
-    const duration = matchedService?.duration || 60;
-    const price = matchedService?.price || 100;
-
-    // Save appointment
-    const lastAppointment = await db.collection('Appointment')
-      .find()
-      .sort({ appointmentId: -1 })
-      .limit(1)
-      .toArray();
-
-    const nextAppointmentId = lastAppointment.length > 0
-      ? lastAppointment[0].appointmentId + 1
-      : 1000;
-
+    const lastAppointment = await db.collection('Appointment').find().sort({ appointmentId: -1 }).limit(1).toArray();
+    const nextAppointmentId = lastAppointment.length > 0 ? lastAppointment[0].appointmentId + 1 : 1000;
 
     const appointment = {
       appointmentId: nextAppointmentId,
       customerId: finalCustomerId,
       salonId,
-      employeeId: parseInt(numericEmployeeId),
+      employeeId: numericEmployeeId,
       service,
       date,
       time,
@@ -93,7 +98,6 @@ export async function POST(req) {
 
     const result = await db.collection('Appointment').insertOne(appointment);
 
-    // Log payment
     await db.collection('Payment').insertOne({
       appointmentId: result.insertedId,
       customerId: finalCustomerId,
@@ -105,47 +109,16 @@ export async function POST(req) {
       createdAt: new Date(),
     });
 
-    // Send email
     await resend.emails.send({
       from: 'SalonSync <booking@grizzway.dev>',
       to: [email],
       subject: 'Your SalonSync Appointment Confirmation',
-      html: `
-        <h2>Appointment Confirmed</h2>
-        <p><strong>Service:</strong> ${service}</p>
-        <p><strong>Date:</strong> ${date}</p>
-        <p><strong>Time:</strong> ${time}</p>
-        <p><strong>Stylist:</strong> ${emp?.name || 'Unknown'}</p>
-        <p><strong>Total:</strong> $${price} (${paymentOption === 'half' ? 'Half Paid' : 'Paid in Full'})</p>
-        <br>
-        <p>Thank you for booking with SalonSync 💜</p>
-      `,
+      html: `<h2>Confirmed</h2><p><strong>Service:</strong> ${service}</p><p><strong>Time:</strong> ${date} at ${time}</p><p><strong>Stylist:</strong> ${emp?.name || 'Stylist'}</p>`
     });
-    
-    // Notify the employee
-    if (emp?.email) {
-      await resend.emails.send({
-        from: 'SalonSync <booking@grizzway.dev>',
-        to: [emp.email],
-        subject: `New Appointment Booked: ${service} on ${date}`,
-        html: `
-          <h2>You've Been Booked 🎉</h2>
-          <p><strong>Service:</strong> ${service}</p>
-          <p><strong>Date:</strong> ${date}</p>
-          <p><strong>Time:</strong> ${time}</p>
-          <p><strong>Customer Name:</strong> ${customerName}</p>
-          <p><strong>Customer Email:</strong> ${email}</p>
-          <br>
-          <p>Log in to your dashboard for more details.</p>
-        `,
-      });
-    }
 
     return new Response(JSON.stringify({ appointmentId: nextAppointmentId }), { status: 201 });
-
   } catch (err) {
     console.error('Booking error:', err);
     return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
   }
 }
-

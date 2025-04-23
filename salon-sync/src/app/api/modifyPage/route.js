@@ -34,12 +34,23 @@ export async function PUT(req) {
     const logoFile = formData.get('logo');
     const bannerFile = formData.get('banner');
 
+    const rawBusinessHours = formData.get('businessHours');
+
     const updateFields = {
       Phone: phone,
       Description: description,
       email,
       address,
     };
+    
+    if (rawBusinessHours) {
+      try {
+        updateFields.businessHours = JSON.parse(rawBusinessHours);
+      } catch (err) {
+        console.error('Failed to parse businessHours JSON:', err);
+      }
+    }
+    
 
     // Upload logo if present
     if (logoFile && typeof logoFile === 'object') {

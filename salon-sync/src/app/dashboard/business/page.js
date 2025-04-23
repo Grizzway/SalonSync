@@ -30,7 +30,7 @@ export default function BusinessDashboard() {
     if (!user || user.type !== 'business') {
       router.push('/');
     } else {
-      fetch(`/api/appointments/salon?sId=${user.id}`)
+      fetch(`/api/appointments/salon?sId=${user.salonId}`)
         .then(async (res) => {
           if (!res.ok) {
             throw new Error(`Fetch failed with status ${res.status}`);
@@ -40,7 +40,7 @@ export default function BusinessDashboard() {
           try {
             const data = JSON.parse(text);
             const formatted = (data.appointments || []).map((apt) => {
-              const start = new Date(`${apt.date}T${apt.time}`);
+              const start = new Date(Date.parse(`${apt.date}T${apt.time}`));
               const end = new Date(start.getTime() + (apt.duration || 30) * 60000);
               return {
                 id: apt._id,
@@ -59,7 +59,7 @@ export default function BusinessDashboard() {
           console.error('Fetch appointments error:', err);
         });
 
-      fetch(`/api/modifyPage?salonId=${user.id}`)
+      fetch(`/api/modifyPage?salonId=${user.salonId}`)
         .then(res => res.json())
         .then(data => {
           if (data.businessHours) {
@@ -133,19 +133,20 @@ export default function BusinessDashboard() {
               Manage Employees
             </Button>
           </div>
+
           {/* Employee Schedule Button */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-purple-200 dark:border-purple-700">
-                <h2 className="text-xl font-semibold text-purple-700 dark:text-purple-300 mb-2">📆 Employee Schedule</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    View and manage all your employee schedules.
-                </p>
-                <Button
-                    onClick={() => router.push('/dashboard/business/schedule')}
-                    className="w-full bg-purple-600 text-white hover:bg-purple-700"
-                >
-                    View Schedule
-                </Button>
-                </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border border-purple-200 dark:border-purple-700">
+            <h2 className="text-xl font-semibold text-purple-700 dark:text-purple-300 mb-2">📆 Employee Schedule</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              View and manage all your employee schedules.
+            </p>
+            <Button
+              onClick={() => router.push('/dashboard/business/schedule')}
+              className="w-full bg-purple-600 text-white hover:bg-purple-700"
+            >
+              View Schedule
+            </Button>
+          </div>
 
         </div>
       </div>

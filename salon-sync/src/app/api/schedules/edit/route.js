@@ -1,4 +1,3 @@
-// ✅ FILE: src/app/api/schedules/edit/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { ObjectId } from 'mongodb';
 
@@ -7,18 +6,23 @@ export async function POST(req) {
     const data = await req.json();
     const { db } = await connectToDatabase();
 
+    // Ensure correct numeric ID is stored
+    const employeeId = parseInt(data.employeeId);
+    if (isNaN(employeeId)) {
+      return new Response(JSON.stringify({ error: "Invalid employeeId" }), { status: 400 });
+    }
+
     const result = await db.collection("Schedule").insertOne({
       salonId: parseInt(data.salonId),
       employeeName: data.employeeName,
-      employeeId: parseInt(data.employeeId),
+      employeeId: employeeId,
       title: data.title,
       start: new Date(data.start),
       end: new Date(data.end),
     });
 
     return new Response(JSON.stringify({ insertedId: result.insertedId }), { status: 201 });
-  } catch (err) {
-    console.error("POST error in schedules/edit:", err);
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to create schedule" }), { status: 500 });
   }
 }
@@ -45,8 +49,7 @@ export async function PUT(req) {
     );
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (err) {
-    console.error("PUT error in schedules/edit:", err);
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to update schedule" }), { status: 500 });
   }
 }
@@ -61,8 +64,7 @@ export async function DELETE(req) {
     await db.collection("Schedule").deleteOne({ _id: new ObjectId(id) });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (err) {
-    console.error("DELETE error in schedules/edit:", err);
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to delete schedule" }), { status: 500 });
   }
 }

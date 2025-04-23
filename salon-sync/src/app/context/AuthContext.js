@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
         const raw = userCookie.split('=')[1];
         const decoded = decodeURIComponent(raw); // ✅ Decode before parsing
         const userData = JSON.parse(decoded);
+        console.log('🔍 AuthContext loaded user:', userData); // ✅ ADD THIS
         setUser(userData);
       } catch (error) {
         console.error('Error parsing user cookie:', error);

@@ -17,7 +17,7 @@ export async function GET(req) {
     // 💡 Match employeeId as a string, since it's stored as string in DB
     const appointments = await db
       .collection('Appointment')
-      .find({ employeeId }) // ← no parseInt!
+      .find({ employeeId: parseInt(employeeId, 10) })
       .toArray();
 
     return new Response(

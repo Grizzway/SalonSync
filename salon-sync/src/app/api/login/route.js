@@ -29,6 +29,7 @@ export async function POST(req) {
 
     const userData = {
       id: user.customerId || user.salonId,
+      salonId: user.salonId || undefined, 
       name: user.businessName || user.name,
       type: user.businessName ? 'business' : 'customer',
     };
