@@ -1,6 +1,8 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
+  let client;
+
   try {
     const { searchParams } = new URL(req.url);
     const employeeId = searchParams.get('employeeId');
@@ -12,9 +14,10 @@ export async function GET(req) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // 💡 Match employeeId as a string, since it's stored as string in DB
     const appointments = await db
       .collection('Appointment')
       .find({ employeeId: parseInt(employeeId, 10) })
@@ -30,5 +33,9 @@ export async function GET(req) {
       JSON.stringify({ message: 'Internal server error' }),
       { status: 500 }
     );
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

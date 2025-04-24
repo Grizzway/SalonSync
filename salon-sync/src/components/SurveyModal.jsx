@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
-export default function SurveyModal({ open, onClose, customerId, onSurveyComplete }) {
+export default function SurveyModal({ open, onClose, onSurveyComplete, customerId, prefill }) {
   const [form, setForm] = useState({
     hairType: '',
     hairTexture: '',
@@ -20,6 +20,26 @@ export default function SurveyModal({ open, onClose, customerId, onSurveyComplet
 
   const [errors, setErrors] = useState({});
   const [formErrorMessage, setFormErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (open && prefill) {
+      setForm(prefill);
+    } else if (open) {
+      setForm({
+        hairType: '',
+        hairTexture: '',
+        curlType: '',
+        hairLength: '',
+        colorHistory: '',
+        hairDamageInfo: '',
+        shampooConditioner: '',
+        skincareRoutine: '',
+        sensitiveSkin: '',
+        skinType: '',
+        allergies: ''
+      });
+    }
+  }, [open, prefill]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,11 +81,8 @@ export default function SurveyModal({ open, onClose, customerId, onSurveyComplet
     }
   };
 
-  const inputClass = (field) =>
-    `w-full p-2 border rounded ${errors[field] ? 'border-red-500' : ''}`;
-
-  const textAreaClass = (field) =>
-    `w-full p-3 border rounded h-28 ${errors[field] ? 'border-red-500' : ''}`;
+  const inputClass = (field) => `w-full p-2 border rounded ${errors[field] ? 'border-red-500' : ''}`;
+  const textAreaClass = (field) => `w-full p-3 border rounded h-28 ${errors[field] ? 'border-red-500' : ''}`;
 
   return (
     open && (

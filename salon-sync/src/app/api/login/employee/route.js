@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcrypt';
 
 export async function POST(req) {
+  let client;
+
   try {
     const { email, password } = await req.json();
 
@@ -10,16 +12,16 @@ export async function POST(req) {
       return new Response(JSON.stringify({ success: false, message: 'Email and password required.' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // Look for employee by email (or username if you choose to add that later)
     const employee = await db.collection('Employee').findOne({ email });
 
     if (!employee) {
       return new Response(JSON.stringify({ success: false, message: 'Employee not found.' }), { status: 404 });
     }
 
-    // Ensure they have a password (they might not if invited but never registered)
     if (!employee.password) {
       return new Response(JSON.stringify({ success: false, message: 'Employee has not finished registration.' }), { status: 403 });
     }
@@ -50,5 +52,9 @@ export async function POST(req) {
   } catch (err) {
     console.error('Employee login error:', err);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error.' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

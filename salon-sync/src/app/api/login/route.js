@@ -3,22 +3,22 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 export async function POST(req) {
+  let client;
+
   try {
     const { email, password } = await req.json();
-    const { db } = await connectToDatabase();
 
-    console.log("🔍 Attempting login for:", email);
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     let user = await db.collection('Customer').findOne({ email });
+
     if (!user) {
-      console.log("❌ No customer found, checking Business...");
       user = await db.collection('Business').findOne({ email });
-    } else {
-      console.log("✅ Found customer account");
     }
 
     if (!user) {
-      console.log("❌ No user found at all");
       return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
     }
 
@@ -29,24 +29,26 @@ export async function POST(req) {
 
     const userData = {
       id: user.customerId || user.salonId,
-      salonId: user.salonId || undefined, 
+      salonId: user.salonId || undefined,
       name: user.businessName || user.name,
       type: user.businessName ? 'business' : 'customer',
     };
 
-    const cookieStore = await cookies(); // ✅ await added here
+    const cookieStore = await cookies();
     cookieStore.set('user', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    console.log("✅ Login successful:", userData);
     return new Response(JSON.stringify({ success: true, user: userData }), { status: 200 });
   } catch (error) {
-    console.error('Login Error:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

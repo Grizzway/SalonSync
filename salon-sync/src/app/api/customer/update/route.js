@@ -2,13 +2,18 @@ import { connectToDatabase } from '@/app/utils/mongoConnection';
 import bcrypt from 'bcrypt';
 
 export async function POST(req) {
+  let client;
+
   try {
     const { customerId, name, email, bio, password } = await req.json();
-    const { db } = await connectToDatabase();
 
     if (!customerId || !email || !name) {
       return new Response(JSON.stringify({ success: false, message: 'Missing fields.' }), { status: 400 });
     }
+
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     const update = { name, email, bio };
     if (password && password.length > 0) {
@@ -22,5 +27,9 @@ export async function POST(req) {
   } catch (err) {
     console.error('Profile update failed:', err);
     return new Response(JSON.stringify({ success: false, message: 'Server error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

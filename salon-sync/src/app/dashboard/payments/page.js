@@ -7,13 +7,12 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 
 export default function Payments() {
-  const { user } = useAuth(); // Access user data from AuthContext
+  const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [error, setError] = useState(null);
 
-  // Fetch payments for the logged-in user's salonId
   const fetchPayments = async (salonId) => {
     try {
       const res = await fetch(`/api/payment?salonId=${salonId}`);
@@ -33,12 +32,12 @@ export default function Payments() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/'); // Redirect to home if user is not logged in
+      router.push('/'); 
       return;
     }
 
     if (user.salonId) {
-      fetchPayments(user.salonId); // Fetch payments using the logged-in user's salonId
+      fetchPayments(user.salonId); 
     } else {
       setError('No salonId found for the logged-in user.');
       setLoading(false);

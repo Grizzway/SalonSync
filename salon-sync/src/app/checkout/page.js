@@ -2,7 +2,6 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { Loader2 } from 'lucide-react';
@@ -13,45 +12,52 @@ export default function CheckoutPage() {
   const appointmentId = searchParams.get('appointmentId');
 
   const [appointment, setAppointment] = useState(null);
+  const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentOption, setPaymentOption] = useState('half');
 
   useEffect(() => {
     if (!appointmentId) return;
 
-    async function fetchAppointment() {
-      const res = await fetch(`/api/appointments/view?appointmentId=${appointmentId}`);
-      const data = await res.json();
-      if (res.ok) setAppointment(data.appointment);
-      else alert(data.message || 'Failed to load appointment');
-      setLoading(false);
+    async function fetchAppointmentAndPayment() {
+      try {
+        const appointmentRes = await fetch(`/api/appointments/view?appointmentId=${appointmentId}`);
+        const appointmentData = await appointmentRes.json();
+
+        if (!appointmentRes.ok) {
+          alert(appointmentData.message || 'Failed to load appointment');
+          return;
+        }
+
+        setAppointment(appointmentData.appointment);
+
+        const salonId = appointmentData.appointment.salonId;
+        const paymentRes = await fetch(`/api/payment?salonId=${salonId}`);
+        const paymentData = await paymentRes.json();
+
+        if (paymentRes.ok) {
+          console.log('Available payments:', paymentData.payments);
+          console.log('Looking for appointmentId:', appointmentData.appointment.appointmentId);
+        
+          const match = paymentData.payments.find(
+            (p) => Number(p.appointmentId) === Number(appointmentData.appointment.appointmentId)
+          );
+        
+          console.log('Matched payment:', match);
+          setPayment(match);
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    fetchAppointment();
+    fetchAppointmentAndPayment();
   }, [appointmentId]);
 
   const handlePayment = async () => {
-    if (!appointmentId || !appointment) return;
-
-    const amount = paymentOption === 'half' ? appointment.price / 2 : appointment.price;
-
-    const res = await fetch('/api/payment/update', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        appointmentId,
-        paymentOption,
-        amount,
-      }),
-    });
-
-    if (res.ok) {
-      alert('Payment processed successfully!');
-      router.push('/dashboard/customer');  
-    } else {
-      const data = await res.json();
-      alert(data.message || 'Failed to process payment');
-    }
+    alert('Payment processed successfully!');
+    router.push('/dashboard/customer');
   };
 
   return (
@@ -70,17 +76,10 @@ export default function CheckoutPage() {
               <strong>Service:</strong> {appointment.service}<br />
               <strong>Date:</strong> {appointment.date}<br />
               <strong>Time:</strong> {appointment.time}<br />
-              <strong>Total:</strong> ${appointment.price}
+              <strong>Payment Option:</strong> {payment?.paymentMethod || 'Unknown'}<br />
+              <strong>Amount to be Paid:</strong> {payment?.paid || 'Unknown'}<br />
+              <strong>Total:</strong> ${appointment.price}<br />
             </p>
-
-            <select
-              value={paymentOption}
-              onChange={(e) => setPaymentOption(e.target.value)}
-              className="w-full p-2 mb-6 border rounded dark:bg-gray-700"
-            >
-              <option value="half">Pay Half Now</option>
-              <option value="full">Pay Full Now</option>
-            </select>
 
             <Button onClick={handlePayment} className="w-full bg-purple-600 text-white hover:bg-purple-700">
               Complete Payment

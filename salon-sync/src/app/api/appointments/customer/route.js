@@ -4,6 +4,8 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET(req) {
+  let client;
+
   const { searchParams } = new URL(req.url);
   const customerId = Number(searchParams.get('customerId'));
 
@@ -12,7 +14,9 @@ export async function GET(req) {
   }
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     const appointments = await db.collection('Appointment')
       .find({ customerId })
@@ -33,10 +37,16 @@ export async function GET(req) {
   } catch (err) {
     console.error('Error fetching customer appointments:', err);
     return new Response(JSON.stringify({ error: 'Failed to fetch appointments' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
 export async function DELETE(req) {
+  let client;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('appointmentId');
@@ -45,16 +55,16 @@ export async function DELETE(req) {
       return new Response(JSON.stringify({ error: 'Missing appointmentId' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // 1. Look up the appointment by custom ID
     const appointment = await db.collection('Appointment').findOne({ appointmentId: Number(id) });
 
     if (!appointment) {
       return new Response(JSON.stringify({ error: 'Appointment not found' }), { status: 404 });
     }
 
-    // 2. Fetch related customer and employee
     const customer = await db.collection('Customer').findOne({ customerId: appointment.customerId });
     const employee = await db.collection('Employee').findOne({ employeeId: appointment.employeeId });
 
@@ -67,14 +77,12 @@ export async function DELETE(req) {
     const date = appointment.date;
     const time = appointment.time;
 
-    // 3. Delete the appointment
     const result = await db.collection('Appointment').deleteOne({ appointmentId: Number(id) });
 
     if (result.deletedCount === 0) {
       return new Response(JSON.stringify({ error: 'Failed to delete appointment' }), { status: 500 });
     }
 
-    // 4. Send cancellation confirmation to customer
     if (customerEmail) {
       await resend.emails.send({
         from: 'SalonSync <booking@grizzway.dev>',
@@ -90,7 +98,6 @@ export async function DELETE(req) {
       });
     }
 
-    // 5. Send notification to employee
     if (employeeEmail) {
       await resend.emails.send({
         from: 'SalonSync <booking@grizzway.dev>',
@@ -105,9 +112,12 @@ export async function DELETE(req) {
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-
   } catch (err) {
     console.error('Error cancelling appointment:', err);
     return new Response(JSON.stringify({ error: 'Failed to cancel appointment' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

@@ -12,7 +12,6 @@ export default function ReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch reviews for the logged-in user's salonId
   const fetchReviews = async (salonId) => {
     try {
       const res = await fetch(`/api/reviews/${salonId}`);
@@ -32,12 +31,12 @@ export default function ReviewsPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/'); // Redirect to home if user is not logged in
+      router.push('/'); 
       return;
     }
 
     if (user.salonId) {
-      fetchReviews(user.salonId); // Fetch reviews using the logged-in user's salonId
+      fetchReviews(user.salonId); 
     } else {
       setError('No salonId found for the logged-in user.');
       setLoading(false);
@@ -57,7 +56,7 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-20"> {/* Add pt-20 to account for Navbar height */}
+    <div className="min-h-screen bg-gray-100 pt-20">
       <Navbar />
       <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
         Reviews for {user.businessName}

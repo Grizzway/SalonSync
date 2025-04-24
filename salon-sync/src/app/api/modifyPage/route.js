@@ -1,4 +1,3 @@
-// src/app/api/modifyPage/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { v2 as cloudinary } from 'cloudinary';
 
@@ -8,15 +7,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Disable body parser
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// PUT: Update salon info
 export async function PUT(req) {
+  let client;
+
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const salonId = searchParams.get('salonId');
 
@@ -33,7 +32,6 @@ export async function PUT(req) {
     const address = formData.get('address');
     const logoFile = formData.get('logo');
     const bannerFile = formData.get('banner');
-
     const rawBusinessHours = formData.get('businessHours');
 
     const updateFields = {
@@ -42,41 +40,38 @@ export async function PUT(req) {
       email,
       address,
     };
-    
+
     if (rawBusinessHours) {
       try {
         updateFields.businessHours = JSON.parse(rawBusinessHours);
       } catch (err) {
-        console.error('Failed to parse businessHours JSON:', err);
       }
     }
-    
 
-    // Upload logo if present
     if (logoFile && typeof logoFile === 'object') {
       const logoBuffer = Buffer.from(await logoFile.arrayBuffer());
       const logoUpload = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream({ folder: 'salons/logos' }, (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }).end(logoBuffer);
+        cloudinary.uploader.upload_stream({ folder: 'salons/logos' }, (err, result) =>
+          err ? reject(err) : resolve(result)
+        ).end(logoBuffer);
       });
       updateFields.logo = logoUpload.secure_url;
     }
 
-    // Upload banner if present
     if (bannerFile && typeof bannerFile === 'object') {
       const bannerBuffer = Buffer.from(await bannerFile.arrayBuffer());
       const bannerUpload = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream({ folder: 'salons/banners' }, (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }).end(bannerBuffer);
+        cloudinary.uploader.upload_stream({ folder: 'salons/banners' }, (err, result) =>
+          err ? reject(err) : resolve(result)
+        ).end(bannerBuffer);
       });
       updateFields.banner = bannerUpload.secure_url;
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const result = await db.collection('Business').updateOne(
       { salonId: parseInt(salonId) },
       { $set: updateFields }
@@ -88,13 +83,17 @@ export async function PUT(req) {
 
     return new Response(JSON.stringify({ message: 'Salon updated successfully' }), { status: 200 });
   } catch (err) {
-    console.error('PUT error in modifyPage:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
-// GET: Fetch salon info
 export async function GET(req) {
+  let client;
+
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const salonId = searchParams.get('salonId');
 
@@ -103,7 +102,10 @@ export async function GET(req) {
   }
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const salon = await db.collection('Business').findOne({ salonId: parseInt(salonId) });
 
     if (!salon) {
@@ -112,7 +114,10 @@ export async function GET(req) {
 
     return new Response(JSON.stringify(salon), { status: 200 });
   } catch (err) {
-    console.error('GET error in modifyPage:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

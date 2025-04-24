@@ -1,6 +1,3 @@
-// /src/app/api/upload/customer-image/route.js
-
-import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({

@@ -1,16 +1,19 @@
-// ✅ FIXED FILE: src/app/api/schedules/employee/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
+  let client;
+
   try {
     const employeeId = req.nextUrl.searchParams.get('employeeId');
     if (!employeeId) {
       return new Response(JSON.stringify({ error: 'Missing employeeId' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    const schedules = await db.collection('Schedule') // ✅ FIXED COLLECTION NAME
+    const schedules = await db.collection('Schedule')
       .find({ employeeId: parseInt(employeeId, 10) })
       .sort({ start: 1 })
       .toArray();
@@ -22,6 +25,9 @@ export async function GET(req) {
   } catch (err) {
     console.error('Error fetching employee schedule:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
-

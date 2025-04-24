@@ -76,7 +76,7 @@ export default function RegisterEmployeePage() {
     setLoading(false);
 
     if (res.ok) {
-      login(data.user); // Save cookie
+      login(data.user);
       router.push('/dashboard/employee');
     } else {
       alert(data.message || 'Something went wrong');

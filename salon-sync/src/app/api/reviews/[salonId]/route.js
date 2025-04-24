@@ -1,22 +1,23 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
-// Handle GET request to fetch reviews
 export async function GET(req, context) {
-  const { salonId } = await context.params; // Access params directly
+  let client;
+  const { salonId } = await context.params;
 
   if (!salonId) {
     return new Response(JSON.stringify({ error: 'Salon ID is missing' }), { status: 400 });
   }
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // Fetch reviews for the specified salonId
     const reviews = await db.collection('Reviews').aggregate([
-      { $match: { salonId: parseInt(salonId, 10) } }, // Match reviews for the given salonId
+      { $match: { salonId: parseInt(salonId, 10) } },
       {
         $lookup: {
-          from: 'Customer', // Join with Customer collection
+          from: 'Customer',
           localField: 'customerId',
           foreignField: 'customerId',
           as: 'customerDetails',
@@ -28,7 +29,7 @@ export async function GET(req, context) {
           rating: 1,
           review: 1,
           createdAt: 1,
-          'customerDetails.name': 1, // Include only the customer's name
+          'customerDetails.name': 1,
         },
       },
     ]).toArray();
@@ -37,12 +38,16 @@ export async function GET(req, context) {
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch reviews' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
-// Handle POST request to submit a review
 export async function POST(req, context) {
-  const { salonId } =  await context.params; // Access params directly
+  let client;
+  const { salonId } = await context.params;
 
   if (!salonId) {
     return new Response(JSON.stringify({ error: 'Salon ID is missing' }), { status: 400 });
@@ -55,21 +60,20 @@ export async function POST(req, context) {
       return new Response(JSON.stringify({ error: 'Rating, review, and customer ID are required.' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // Ensure customer exists before inserting review
     const customer = await db.collection('Customer').findOne({ customerId });
     if (!customer) {
       return new Response(JSON.stringify({ error: 'Invalid customer ID.' }), { status: 400 });
     }
 
-    // Check if the customer has already reviewed this salon
     const existingReview = await db.collection('Reviews').findOne({ salonId: parseInt(salonId, 10), customerId });
     if (existingReview) {
       return new Response(JSON.stringify({ error: 'You can only submit one review per salon.' }), { status: 400 });
     }
 
-    // Insert the review
     await db.collection('Reviews').insertOne({
       salonId: parseInt(salonId, 10),
       rating,
@@ -78,12 +82,10 @@ export async function POST(req, context) {
       createdAt: new Date(),
     });
 
-    // Recalculate the average rating for the salon
     const reviews = await db.collection('Reviews').find({ salonId: parseInt(salonId, 10) }).toArray();
     const totalRating = reviews.reduce((sum, rev) => sum + rev.rating, 0);
     const avgRating = totalRating / reviews.length;
 
-    // Update the salon's average rating in the Business collection
     await db.collection('Business').updateOne(
       { salonId: parseInt(salonId, 10) },
       { $set: { rating: avgRating } }
@@ -93,5 +95,9 @@ export async function POST(req, context) {
   } catch (error) {
     console.error('Error submitting review:', error);
     return new Response(JSON.stringify({ error: 'Failed to submit review' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

@@ -43,7 +43,7 @@ export default function CustomerAppointmentsPage() {
         method: 'DELETE',
       });
       setShowDialog(false);
-      fetchAppointments(); // refresh list
+      fetchAppointments();
     } catch (err) {
       console.error('Failed to cancel appointment:', err);
     }

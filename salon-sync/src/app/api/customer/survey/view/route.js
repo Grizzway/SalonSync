@@ -17,9 +17,13 @@ export async function GET(req) {
 
     const survey = await db.collection('CustomerSurvey').findOne({ customerId });
 
-    return new Response(JSON.stringify({ completed: !!survey }), { status: 200 });
+    if (!survey) {
+      return new Response(JSON.stringify({ found: false }), { status: 404 });
+    }
+
+    return new Response(JSON.stringify({ found: true, survey }), { status: 200 });
   } catch (err) {
-    console.error('Survey check error:', err);
+    console.error('Survey view error:', err);
     return new Response(JSON.stringify({ error: 'Server error' }), { status: 500 });
   } finally {
     if (client && !global._mongoClientPromise) {

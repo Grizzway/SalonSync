@@ -1,14 +1,16 @@
-// src/app/api/salon/[salonId]/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import cloudinary from '@/app/utils/cloudinary';
 import { Readable } from 'stream';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req, context) {
-  const { salonId } = await context.params
+  let client;
+  const { salonId } = await context.params;
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     if (!salonId) {
       return new Response(JSON.stringify({ error: 'Invalid salon ID' }), { status: 400 });
@@ -42,16 +44,23 @@ export async function GET(req, context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error fetching salon data:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
 export async function PATCH(req, context) {
+  let client;
   const { salonId } = context.params;
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const formData = await req.formData();
     const file = formData.get('image');
 
@@ -87,8 +96,10 @@ export async function PATCH(req, context) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('Upload failed:', err);
     return new Response(JSON.stringify({ error: 'Image upload failed' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
-

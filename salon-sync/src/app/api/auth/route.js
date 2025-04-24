@@ -1,10 +1,15 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req, { params }) {
+  let client;
+
   const { salonname } = params;
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const salon = await db.collection('Business').findOne({
       businessName: { $regex: new RegExp(`^${salonname}$`, 'i') },
     });
@@ -24,5 +29,9 @@ export async function GET(req, { params }) {
   } catch (error) {
     console.error('Error fetching salon data:', error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

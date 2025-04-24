@@ -1,6 +1,8 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
+  let client;
+
   const { searchParams } = new URL(req.url);
   const salonId = searchParams.get('salonId');
 
@@ -12,14 +14,16 @@ export async function GET(req) {
   }
 
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     // Use aggregation to join Payments with Customer and Employee collections
     const payments = await db.collection('Payment').aggregate([
-      { $match: { salonId: parseInt(salonId, 10) } }, // Match payments for the given salonId
+      { $match: { salonId: parseInt(salonId, 10) } },
       {
         $lookup: {
-          from: 'Customer', // Join with Customer collection
+          from: 'Customer',
           localField: 'customerId',
           foreignField: 'customerId',
           as: 'customerDetails',
@@ -27,7 +31,7 @@ export async function GET(req) {
       },
       {
         $lookup: {
-          from: 'Employee', // Join with Employee collection
+          from: 'Employee',
           localField: 'employeeId',
           foreignField: 'employeeId',
           as: 'employeeDetails',
@@ -36,20 +40,25 @@ export async function GET(req) {
       {
         $project: {
           _id: 1,
+          appointmentId: 1,
           cost: 1,
           paymentMethod: 1,
-          'customerDetails.name': 1, // Include only the customer's name
-          'employeeDetails.name': 1, // Include only the employee's name
+          paid: 1,
+          'customerDetails.name': 1,
+          'employeeDetails.name': 1,
         },
       },
     ]).toArray();
 
     return new Response(JSON.stringify({ payments }), { status: 200 });
   } catch (error) {
-    console.error('Error fetching payments:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to fetch payments' }),
       { status: 500 }
     );
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

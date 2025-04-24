@@ -1,21 +1,39 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
-  try {
-    const { db } = await connectToDatabase();
-    const salons = await db.collection('Business').find({}, { projection: { businessName: 1, logo: 1, salonId: 1, address: 1, _id: 0 } }).toArray();
+  let client;
 
-    // Return the list of salons
+  try {
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
+    const salons = await db.collection('Business').find(
+      {},
+      {
+        projection: {
+          businessName: 1,
+          logo: 1,
+          salonId: 1,
+          address: 1,
+          _id: 0
+        }
+      }
+    ).toArray();
+
     const salonData = salons.map((salon) => ({
-      id: salon.salonId, // changed to match the frontend's `salon.id`
+      id: salon.salonId,
       name: salon.businessName,
       logo: salon.logo,
       address: salon.address
     }));
 
     return new Response(JSON.stringify(salonData), { status: 200 });
-  } catch (error) {
-    console.error('Error fetching salons:', error);
+  } catch {
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

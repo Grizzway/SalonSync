@@ -1,5 +1,3 @@
-// src/app/login/page.js
-
 'use client';
 
 import { useState } from 'react';
@@ -25,7 +23,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (data.success) {
-        login(data.user); // Ensure `data.user` contains `salonId`
+        login(data.user); 
         router.push('/');
       } else {
         setMessage(data.message || 'Login failed');

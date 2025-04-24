@@ -18,7 +18,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [salonList, setSalonList] = useState([]);
 
-  // ✅ Redirect only if they came from login or registration
+  // Redirect only if they came from login or registration
   useEffect(() => {
     const fromAuthPage = document.referrer.includes("/login") || document.referrer.includes("/register");
     if (!fromAuthPage) return;

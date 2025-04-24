@@ -1,4 +1,3 @@
-// ✅ Updated /login/business/page.js to ensure proper redirect and cookie compatibility
 "use client";
 
 import { useState } from 'react';
@@ -28,7 +27,7 @@ export default function BusinessLoginPage() {
       if (data.success) {
         login(data.user);
         setMessage('Login successful!');
-        router.push('/dashboard'); // ✅ FIXED: Redirect to dashboard
+        router.push('/dashboard');
       } else {
         setMessage(data.message || 'Login failed');
       }

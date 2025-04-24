@@ -1,18 +1,20 @@
-// /src/app/api/appointments/salon/route.js
-
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
+  let client;
+
   try {
     const salonId = req.nextUrl.searchParams.get('sId');
     if (!salonId) {
       return new Response(JSON.stringify({ error: 'Missing salonId' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     const appointments = await db.collection('Appointment')
-      .find({ salonId }) // string match
+      .find({ salonId }) 
       .sort({ date: 1 })
       .toArray();
 
@@ -20,5 +22,9 @@ export async function GET(req) {
   } catch (err) {
     console.error('Error fetching appointments for salon:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

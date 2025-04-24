@@ -1,14 +1,18 @@
 import { connectToDatabase } from "@/app/utils/mongoConnection";
 
 export async function GET() {
+  let client;
+
   try {
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     // Aggregate average ratings per salon using salonId
     const ratingAggregation = await db.collection("Reviews").aggregate([
       { 
         $group: { 
-          _id: { $toString: "$salonId" },  // Convert to string to ensure matching
+          _id: { $toString: "$salonId" },
           avgRating: { $avg: "$rating" }, 
           reviewCount: { $sum: 1 } 
         } 
@@ -16,17 +20,14 @@ export async function GET() {
       { $sort: { avgRating: -1 } }
     ]).toArray();
 
-    // Extract salon IDs as numbers
     const salonIds = ratingAggregation.map(salon => parseInt(salon._id));
 
-    // Fetch business details using salonId with projection and limit
     const businesses = await db.collection("Business")
       .find({ salonId: { $in: salonIds } })
       .project({ salonId: 1, businessName: 1, address: 1, logo: 1 })
       .limit(10)
       .toArray();
 
-    // Merge ratings with business details
     const allSalons = businesses.map(business => {
       const ratingData = ratingAggregation.find(r => parseInt(r._id) === business.salonId);
       return {
@@ -46,8 +47,11 @@ export async function GET() {
         "Cache-Control": "s-maxage=60, stale-while-revalidate"
       }
     });
-  } catch (error) {
-    console.error("Error fetching salons:", error);
+  } catch {
     return new Response(JSON.stringify({ error: "Failed to fetch salons" }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

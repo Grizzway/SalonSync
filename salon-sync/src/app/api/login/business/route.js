@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 
 export async function POST(req) {
+  let client;
+
   try {
     const { email, password } = await req.json();
 
@@ -10,7 +12,10 @@ export async function POST(req) {
       return new Response(JSON.stringify({ success: false, message: 'Email and password required' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const user = await db.collection('Business').findOne({ email });
 
     if (!user) {
@@ -22,14 +27,13 @@ export async function POST(req) {
       return new Response(JSON.stringify({ success: false, message: 'Incorrect password' }), { status: 401 });
     }
 
-    // ✅ Match cookie structure used in /login route
     const userData = {
       salonId: user.salonId,
       name: user.businessName,
       type: 'business',
     };
 
-    const cookieStore = cookies(); // No need to `await` this – it's a sync getter
+    const cookieStore = cookies();
     cookieStore.set('user', JSON.stringify(userData), {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -42,5 +46,9 @@ export async function POST(req) {
   } catch (err) {
     console.error('Login error:', err);
     return new Response(JSON.stringify({ success: false, message: 'Internal server error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

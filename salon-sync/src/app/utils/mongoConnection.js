@@ -10,10 +10,17 @@ export async function connectToDatabase() {
   if (typeof window !== 'undefined') return null;
 
   if (cachedClient && cachedDb) {
-    return { client: cachedClient, db: cachedDb };
+    // ✅ Ensure the client is still connected
+    try {
+      await cachedClient.db().command({ ping: 1 });
+      return { client: cachedClient, db: cachedDb };
+    } catch (err) {
+      // Client is no longer valid, reset cache
+      cachedClient = null;
+      cachedDb = null;
+    }
   }
 
-  // Only create a new client if one doesn't exist
   const client = new MongoClient(uri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

@@ -1,10 +1,11 @@
-// ✅ FINAL FIXED /api/appointments/route.js (booking) — with all shift checks bypassed for demo
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req) {
+  let client;
+
   try {
     const {
       customerId,
@@ -23,10 +24,13 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Missing required fields' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
     const numericEmployeeId = Number(employeeId);
 
-    // 🚫 Shift check bypassed completely for demo
+    // Shift check bypassed completely for demo
     const emp = await db.collection('Employee').findOne({ employeeId: numericEmployeeId });
     const matchedService = emp?.services?.find((s) => s.name === service);
     const duration = matchedService?.duration || 60;
@@ -36,7 +40,6 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Appointments must be in 30-minute intervals' }), { status: 400 });
     }
 
-    // ✅ Prevent overlapping
     const sameDayAppointments = await db.collection('Appointment').find({
       employeeId: numericEmployeeId,
       date,
@@ -55,7 +58,6 @@ export async function POST(req) {
       return new Response(JSON.stringify({ message: 'Time slot overlaps with existing appointment' }), { status: 409 });
     }
 
-    // ✅ Create guest customer if needed
     let finalCustomerId = customerId;
     if (!customerId) {
       const existing = await db.collection('Customer').findOne({ email });
@@ -85,7 +87,7 @@ export async function POST(req) {
     const appointment = {
       appointmentId: nextAppointmentId,
       customerId: finalCustomerId,
-      salonId,
+      salonId: parseInt(salonId),
       employeeId: numericEmployeeId,
       service,
       date,
@@ -99,12 +101,12 @@ export async function POST(req) {
     const result = await db.collection('Appointment').insertOne(appointment);
 
     await db.collection('Payment').insertOne({
-      appointmentId: result.insertedId,
+      appointmentId: nextAppointmentId,
       customerId: finalCustomerId,
-      salonId,
+      salonId: parseInt(salonId),
       employeeId: numericEmployeeId,
       cost: paymentOption === 'half' ? price / 2 : price,
-      paymentMethod: 'Credit (Fake)',
+      paymentMethod: 'Debit/Credit',
       paid: paymentOption,
       createdAt: new Date(),
     });
@@ -120,5 +122,9 @@ export async function POST(req) {
   } catch (err) {
     console.error('Booking error:', err);
     return new Response(JSON.stringify({ message: 'Internal Server Error' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

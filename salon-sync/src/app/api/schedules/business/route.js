@@ -1,7 +1,8 @@
-// ✅ FILE: /src/app/api/schedules/business/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function GET(req) {
+  let client;
+
   try {
     const salonId = req.nextUrl.searchParams.get("salonId");
 
@@ -9,7 +10,9 @@ export async function GET(req) {
       return new Response(JSON.stringify({ error: "Missing salonId" }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     const schedules = await db
       .collection("Schedule")
@@ -23,5 +26,9 @@ export async function GET(req) {
   } catch (err) {
     console.error("Error fetching salon schedule:", err);
     return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

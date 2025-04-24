@@ -166,7 +166,7 @@ export default function ModifyBusinessPage() {
             ))}
           </div>
 
-          {/* Image Upload Section (unchanged) */}
+          {/* Image Upload Section*/}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Logo Upload */}
             <div>

@@ -1,4 +1,3 @@
-// ✅ FIXED FILE: src/app/api/employees/route.js
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 import { Resend } from 'resend';
 import { ObjectId } from 'mongodb';
@@ -16,31 +15,26 @@ function generateEmployeeCode() {
 
 async function generateEmployeeId(db) {
   const lastEmployee = await db.collection('Employee').find().sort({ employeeId: -1 }).limit(1).toArray();
-  const nextId = lastEmployee.length > 0 ? lastEmployee[0].employeeId + 1 : 1000;
-  return nextId;
+  return lastEmployee.length > 0 ? lastEmployee[0].employeeId + 1 : 1000;
 }
 
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const salonId = searchParams.get('salonId');
-
-  if (!salonId) {
-    return new Response(
-      JSON.stringify({ error: 'Salon ID is missing' }),
-      { status: 400 }
-    );
-  }
-
-  const salonIdNumber = Number(salonId);
-
+  let client;
   try {
-    const { db } = await connectToDatabase();
+    const { searchParams } = new URL(req.url);
+    const salonId = searchParams.get('salonId');
+    if (!salonId) {
+      return new Response(JSON.stringify({ error: 'Salon ID is missing' }), { status: 400 });
+    }
+
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
+
+    const salonIdNumber = Number(salonId);
     const employees = await db
       .collection('Employee')
-      .find({ $or: [
-        { salonId: salonIdNumber },
-        { salonIds: { $in: [salonIdNumber] } }
-      ]})
+      .find({ $or: [{ salonId: salonIdNumber }, { salonIds: { $in: [salonIdNumber] } }] })
       .project({
         _id: 0,
         name: 1,
@@ -55,49 +49,54 @@ export async function GET(req) {
     return new Response(JSON.stringify({ employees }), { status: 200 });
   } catch (error) {
     console.error('Error fetching employees:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to fetch employees' }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to fetch employees' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
 export async function DELETE(req) {
+  let client;
   try {
     const { employeeId } = await req.json();
-
     if (!employeeId) {
       return new Response(JSON.stringify({ message: 'Employee ID is required.' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
-    const result = await db.collection('Employee').deleteOne({ _id: new ObjectId(employeeId) });
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
+    const result = await db.collection('Employee').deleteOne({ _id: new ObjectId(employeeId) });
     if (!result.deletedCount) {
       return new Response(JSON.stringify({ message: 'Employee not found.' }), { status: 404 });
     }
 
     const employees = await db.collection('Employee').find().toArray();
     return new Response(JSON.stringify({ employees }), { status: 200 });
-
   } catch (error) {
     console.error('Error deleting employee:', error);
     return new Response(JSON.stringify({ message: 'Internal server error.' }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
 
 export async function PUT(req) {
+  let client;
   try {
     const { salonId, salonName: businessName, name, email } = await req.json();
-
     if (!salonId) {
-      return new Response(
-        JSON.stringify({ error: 'Salon ID is missing' }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: 'Salon ID is missing' }), { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
     const employeeId = await generateEmployeeId(db);
     const employeeCode = generateEmployeeCode();
@@ -123,27 +122,21 @@ export async function PUT(req) {
 
     if (error) {
       console.error('Error sending email:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: error }),
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({ error: 'Failed to send email', details: error }), { status: 500 });
     }
 
     const employees = await db.collection('Employee')
-      .find({ $or: [
-        { salonId: Number(salonId) },
-        { salonIds: { $in: [Number(salonId)] } }
-      ] })
+      .find({ $or: [{ salonId: Number(salonId) }, { salonIds: { $in: [Number(salonId)] } }] })
       .project({ _id: 0, name: 1, employeeId: 1 })
       .toArray();
 
     return new Response(JSON.stringify({ employees }), { status: 200 });
-
   } catch (error) {
     console.error('Error adding employee:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to add employee', details: error.message }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Failed to add employee', details: error.message }), { status: 500 });
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }

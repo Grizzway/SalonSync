@@ -1,6 +1,8 @@
 import { connectToDatabase } from '@/app/utils/mongoConnection';
 
 export async function PATCH(req) {
+  let client;
+
   try {
     const { appointmentId, paymentOption, amount } = await req.json();
 
@@ -11,9 +13,11 @@ export async function PATCH(req) {
       );
     }
 
-    const { db } = await connectToDatabase();
+    const connection = await connectToDatabase();
+    client = connection.client;
+    const db = connection.db;
 
-    // Try to update existing payment by appointmentId (manual ID now)
+    // Try to update existing payment by appointmentId 
     const updated = await db.collection('Payment').updateOne(
       { appointmentId: Number(appointmentId) },
       {
@@ -47,5 +51,9 @@ export async function PATCH(req) {
       JSON.stringify({ message: 'Internal Server Error' }),
       { status: 500 }
     );
+  } finally {
+    if (client && !global._mongoClientPromise) {
+      await client.close();
+    }
   }
 }
