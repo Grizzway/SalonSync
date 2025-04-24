@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,17 @@ import Navbar from '@/components/Navbar';
 import SurveyModal from '@/components/SurveyModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-export default function BookingPage() {
+// Default export with Suspense wrapper
+export default function BookingPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-24 px-6">Loading booking page...</div>}>
+      <BookingPage />
+    </Suspense>
+  );
+}
+
+// Booking page component (wrapped above)
+export function BookingPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -209,7 +219,3 @@ export default function BookingPage() {
     </div>
   );
 }
-
-
-
-
