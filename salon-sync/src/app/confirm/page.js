@@ -1,12 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function ConfirmPage() {
+// Default export wrapped in Suspense
+export default function ConfirmPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-violet-100 to-white dark:from-gray-900 dark:to-gray-800">
+        <Navbar />
+        <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
+      </div>
+    }>
+      <ConfirmPage />
+    </Suspense>
+  );
+}
+
+// Main page logic in its own component
+export function ConfirmPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appointmentId = searchParams.get('appointmentId');

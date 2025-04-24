@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
-export default function RegisterEmployeePage() {
+// Suspense wrapper
+export default function RegisterEmployeePageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-purple-50 dark:bg-gray-900">
+        <div className="text-center text-gray-600 dark:text-white">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+          Validating code...
+        </div>
+      </div>
+    }>
+      <RegisterEmployeePage />
+    </Suspense>
+  );
+}
+
+// Wrapped page logic
+export function RegisterEmployeePage() {
   const [loading, setLoading] = useState(false);
   const [codeValid, setCodeValid] = useState(false);
   const [employeeInfo, setEmployeeInfo] = useState({});

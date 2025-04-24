@@ -1,12 +1,22 @@
 'use client';
 
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import { Loader2 } from 'lucide-react';
 
-export default function CheckoutPage() {
+// Default export with Suspense wrapper
+export default function CheckoutPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen pt-24 px-6">Loading checkout...</div>}>
+      <CheckoutPage />
+    </Suspense>
+  );
+}
+
+// Wrapped component
+export function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appointmentId = searchParams.get('appointmentId');
@@ -35,14 +45,9 @@ export default function CheckoutPage() {
         const paymentData = await paymentRes.json();
 
         if (paymentRes.ok) {
-          console.log('Available payments:', paymentData.payments);
-          console.log('Looking for appointmentId:', appointmentData.appointment.appointmentId);
-        
           const match = paymentData.payments.find(
             (p) => Number(p.appointmentId) === Number(appointmentData.appointment.appointmentId)
           );
-        
-          console.log('Matched payment:', match);
           setPayment(match);
         }
       } catch (err) {
